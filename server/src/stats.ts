@@ -27,6 +27,7 @@ export interface StatsStatus {
   loaded: boolean;
   ok: boolean;
   players: number;
+  lastSave: { ok: boolean; error: string | null; at: number | null };
 }
 
 // ---------------------------------------------------------------------------
@@ -196,6 +197,9 @@ export class StatsStore {
   private dirty = false;
   private loaded = false;
   private loadOk = false;
+  private lastSaveOk = false;
+  private lastSaveError: string | null = null;
+  private lastSaveAt: number | null = null;
 
   constructor(backend: Backend = chooseBackend()) {
     this.backend = backend;
@@ -222,6 +226,7 @@ export class StatsStore {
       loaded: this.loaded,
       ok: this.loadOk,
       players: Object.keys(this.entries).length,
+      lastSave: { ok: this.lastSaveOk, error: this.lastSaveError, at: this.lastSaveAt },
     };
   }
 
@@ -280,7 +285,13 @@ export class StatsStore {
       // Snapshot so concurrent record() calls during the await are not lost.
       const snapshot = JSON.parse(JSON.stringify(this.entries)) as Entries;
       await this.backend.save(snapshot);
+      this.lastSaveOk = true;
+      this.lastSaveError = null;
+      this.lastSaveAt = Date.now();
     } catch (err) {
+      this.lastSaveOk = false;
+      this.lastSaveError = String(err instanceof Error ? err.message : err).slice(0, 300);
+      this.lastSaveAt = Date.now();
       console.error(`Kunne ikke gemme topliste (${this.backend.label}):`, err);
     } finally {
       this.saving = false;

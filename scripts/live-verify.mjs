@@ -58,9 +58,8 @@ ws.on("message", (data) => {
         allowDrawFromDiscard: false,
       },
     });
-    send({ type: "addBot", difficulty: "hard" });
-    send({ type: "addBot", difficulty: "hard" });
-    send({ type: "addBot", difficulty: "hard" });
+    // One medium bot = a fast 2-player game that reaches 50 in a few rounds.
+    send({ type: "addBot", difficulty: "medium" });
     setTimeout(() => send({ type: "startGame" }), 600);
     return;
   }
