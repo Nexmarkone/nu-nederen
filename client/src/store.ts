@@ -11,6 +11,7 @@ import {
   type HouseRules,
   type PlayerAction,
   type PrivatePeek,
+  type ReactionEmoji,
   type RedactedGameState,
   type RoomInfo,
   type ServerMessage,
@@ -40,6 +41,12 @@ export interface ToastItem {
   id: number;
   text: string;
   kind: "info" | "error" | "success";
+}
+
+export interface FloatingReaction {
+  id: number;
+  playerId: string;
+  emoji: ReactionEmoji;
 }
 
 interface Session {
@@ -96,6 +103,7 @@ export interface StoreState {
   shake: number;
   joinCodeInput: string;
   joining: boolean;
+  reactions: FloatingReaction[];
   // Actions
   setName(name: string): void;
   setAvatar(avatar: string): void;
@@ -111,6 +119,8 @@ export interface StoreState {
   startGame(): void;
   rematch(): void;
   act(action: PlayerAction): void;
+  sendReaction(emoji: ReactionEmoji): void;
+  kickPlayer(playerId: string): void;
   setSwapSelecting(on: boolean): void;
   setAbilityFirstPick(ref: GridRef | null): void;
   toast(text: string, kind?: ToastItem["kind"]): void;
@@ -146,6 +156,7 @@ export const useStore = create<StoreState>((set, get) => ({
   shake: 0,
   joinCodeInput: "",
   joining: false,
+  reactions: [],
 
   setName(name) {
     localStorage.setItem(LS.name, name);
@@ -221,6 +232,12 @@ export const useStore = create<StoreState>((set, get) => ({
   },
   act(action) {
     socket.send({ type: "action", action });
+  },
+  sendReaction(emoji) {
+    socket.send({ type: "react", emoji });
+  },
+  kickPlayer(playerId) {
+    socket.send({ type: "kickPlayer", playerId });
   },
   setSwapSelecting(on) {
     set({ swapSelecting: on });
@@ -448,6 +465,35 @@ function handleMessage(msg: ServerMessage): void {
     case "event":
       handleEvent(msg.event);
       break;
+
+    case "reaction": {
+      const id = nextId++;
+      set((s) => ({ reactions: [...s.reactions.slice(-7), { id, playerId: msg.playerId, emoji: msg.emoji }] }));
+      sndTick();
+      setTimeout(() => {
+        set((s) => ({ reactions: s.reactions.filter((r) => r.id !== id) }));
+      }, 2600);
+      break;
+    }
+
+    case "kicked": {
+      localStorage.removeItem(LS.session);
+      socket.send({ type: "leaveRoom" });
+      set({
+        room: null,
+        game: null,
+        roomCode: null,
+        token: null,
+        playerId: null,
+        screen: "home",
+        drawnCard: null,
+        peeks: [],
+        windowDeadline: null,
+        banner: null,
+      });
+      useStore.getState().toast("Værten har smidt dig ud af rummet 🥾", "error");
+      break;
+    }
 
     case "leftRoom":
       break;

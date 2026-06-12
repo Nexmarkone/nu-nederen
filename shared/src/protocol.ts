@@ -27,6 +27,11 @@ export const GridRefSchema = z.object({
 
 export const BotDifficultySchema = z.enum(["easy", "medium", "hard"]);
 
+/** Emoji-reaktioner — whitelisted så klienter ikke kan sende vilkårlig tekst. */
+export const REACTION_EMOJIS = ["😂", "🔥", "😱", "👏", "🥖", "😭", "😈", "❤️"] as const;
+export const ReactionEmojiSchema = z.enum(REACTION_EMOJIS);
+export type ReactionEmoji = z.infer<typeof ReactionEmojiSchema>;
+
 export const PlayerNameSchema = z.string().trim().min(1).max(16);
 export const AvatarSchema = z.string().min(1).max(12);
 
@@ -75,6 +80,8 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("rematch") }),
   z.object({ type: z.literal("action"), action: PlayerActionSchema }),
   z.object({ type: z.literal("requestState") }),
+  z.object({ type: z.literal("kickPlayer"), playerId: z.string() }),
+  z.object({ type: z.literal("react"), emoji: ReactionEmojiSchema }),
   z.object({ type: z.literal("ping"), t: z.number().optional() }),
 ]);
 
@@ -271,6 +278,8 @@ export const ServerMessageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("gameState"), state: RedactedGameStateSchema }),
   PrivatePeekSchema,
   z.object({ type: z.literal("event"), event: GameEventSchema }),
+  z.object({ type: z.literal("reaction"), playerId: z.string(), emoji: ReactionEmojiSchema }),
+  z.object({ type: z.literal("kicked") }),
   z.object({ type: z.literal("leftRoom") }),
   z.object({ type: z.literal("error"), code: z.string(), message: z.string() }),
   z.object({ type: z.literal("pong"), t: z.number().optional() }),

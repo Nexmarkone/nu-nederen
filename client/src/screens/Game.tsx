@@ -12,6 +12,7 @@ import { CardGrid } from "../components/CardGrid";
 import { GameOverOverlay } from "../components/GameOverOverlay";
 import { OpponentSeat } from "../components/OpponentSeat";
 import { DiscardPile, DrawPile } from "../components/Piles";
+import { ReactionBar, ReactionOverlay } from "../components/Reactions";
 import { RevealOverlay } from "../components/RevealOverlay";
 
 function Countdown({ deadline, totalMs }: { deadline: number; totalMs: number }) {
@@ -278,6 +279,8 @@ export function Game() {
 
       <ActionSheet />
       <BaguetteButton />
+      <ReactionBar />
+      <ReactionOverlay />
 
       {/* Memorize overlay (non-blocking banner + countdown) */}
       <AnimatePresence>

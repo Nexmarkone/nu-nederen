@@ -58,6 +58,7 @@ export function Lobby() {
   const roomCode = useStore((s) => s.roomCode);
   const addBot = useStore((s) => s.addBot);
   const removeBot = useStore((s) => s.removeBot);
+  const kickPlayer = useStore((s) => s.kickPlayer);
   const updateRules = useStore((s) => s.updateRules);
   const startGame = useStore((s) => s.startGame);
   const leaveRoom = useStore((s) => s.leaveRoom);
@@ -135,6 +136,12 @@ export function Lobby() {
         >
           Del link 📤
         </button>
+        <a
+          className="rounded-2xl bg-bonus-green px-4 py-2.5 text-sm font-extrabold text-cream active:scale-[0.97]"
+          href={`sms:?&body=${encodeURIComponent(`Spil Nu Nederen med mig! 🥖 Koden er ${roomCode}: ${shareUrl}`)}`}
+        >
+          SMS 💬
+        </a>
         {qr && (
           <details className="group">
             <summary className="cursor-pointer list-none rounded-2xl bg-felt-700 px-4 py-2.5 text-sm font-bold text-cream group-open:bg-felt-900">
@@ -172,11 +179,11 @@ export function Lobby() {
               {p.isBot && p.botDifficulty && (
                 <span className="text-[10px] text-cream/60">{DIFF_LABEL[p.botDifficulty]}</span>
               )}
-              {p.isBot && isHost && (
+              {isHost && p.id !== playerId && (
                 <button
                   className="ml-0.5 text-cream/50"
                   aria-label={`Fjern ${p.name}`}
-                  onClick={() => removeBot(p.id)}
+                  onClick={() => (p.isBot ? removeBot(p.id) : kickPlayer(p.id))}
                 >
                   ✕
                 </button>

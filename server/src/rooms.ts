@@ -11,6 +11,7 @@ import {
   type HouseRules,
   type LobbyPlayer,
   type PlayerAction,
+  type ReactionEmoji,
   type RoomInfo,
   type ServerMessage,
 } from "@nu/shared";
@@ -43,6 +44,7 @@ interface Seat {
   token: string | null;
   ws: WebSocket | null;
   graceTimer: ReturnType<typeof setTimeout> | null;
+  lastReactAt: number;
 }
 
 export class Room {
@@ -126,6 +128,7 @@ export class Room {
       token: randomUUID(),
       ws,
       graceTimer: null,
+      lastReactAt: 0,
     };
     this.seats.push(seat);
     if (!this.hostId) this.hostId = seat.id;
@@ -181,6 +184,7 @@ export class Room {
       token: null,
       ws: null,
       graceTimer: null,
+      lastReactAt: 0,
     });
     this.touch();
     this.broadcastRoomState();
@@ -259,6 +263,52 @@ export class Room {
   resync(playerId: string): void {
     this.sendTo(playerId, { type: "roomState", room: this.roomInfo() });
     this.loop?.resyncPlayer(playerId);
+  }
+
+  /** Emoji reaction — broadcast to everyone, lightly rate-limited per seat. */
+  react(playerId: string, emoji: ReactionEmoji): void {
+    const seat = this.seats.find((s) => s.id === playerId);
+    if (!seat) return;
+    const now = Date.now();
+    if (now - seat.lastReactAt < 700) return; // spam guard, silently dropped
+    seat.lastReactAt = now;
+    this.sendAll({ type: "reaction", playerId, emoji });
+  }
+
+  /**
+   * Host privilege: throw a player out. In the lobby the seat disappears;
+   * mid-game a bot takes over instantly. Their token is rotated so the seat
+   * cannot be reclaimed.
+   */
+  kickPlayer(byPlayerId: string, targetId: string): void {
+    this.requireHost(byPlayerId);
+    if (targetId === byPlayerId) {
+      throw new RoomError("cantKickSelf", "Du kan ikke smide dig selv ud.");
+    }
+    const seat = this.seats.find((s) => s.id === targetId);
+    if (!seat) throw new RoomError("noPlayer", "Spilleren findes ikke.");
+    if (seat.isBot) {
+      // Bots kickes via removeBot i lobbyen; midt i spillet kan de ikke fjernes.
+      this.removeBot(byPlayerId, targetId);
+      return;
+    }
+
+    this.sendTo(targetId, { type: "kicked" });
+    seat.token = randomUUID(); // invalidate any stored reconnect token
+    seat.ws = null;
+    if (seat.graceTimer) {
+      clearTimeout(seat.graceTimer);
+      seat.graceTimer = null;
+    }
+
+    if (this.loop && this.loop.state.phase !== "gameOver") {
+      this.takeOverSeat(targetId);
+    } else {
+      this.dropSeat(targetId);
+    }
+    this.touch();
+    this.broadcastRoomState();
+    this.disposeIfAbandoned();
   }
 
   // --- Presence -------------------------------------------------------------

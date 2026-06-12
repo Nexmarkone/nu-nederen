@@ -172,6 +172,12 @@ function handleMessage(ws: WebSocket, session: Session, msg: ClientMessage): voi
     case "requestState":
       room.resync(playerId);
       return;
+    case "kickPlayer":
+      room.kickPlayer(playerId, msg.playerId);
+      return;
+    case "react":
+      room.react(playerId, msg.emoji);
+      return;
   }
 }
 
