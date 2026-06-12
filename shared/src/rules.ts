@@ -17,7 +17,8 @@ export const DEFAULT_RULES: HouseRules = {
   jumpInWindowSeconds: 5,
   jumpInPenalty: "card",
   turnTimerSeconds: 60,
-  allowDrawFromDiscard: false,
+  // Husreglerne tillader at tage det åbne kort fra afkastbunken — default TIL.
+  allowDrawFromDiscard: true,
 };
 
 export const MIN_PLAYERS = 2;

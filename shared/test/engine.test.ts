@@ -116,7 +116,7 @@ describe("turn flow", () => {
   });
 
   it("disallows drawing from the discard pile unless the house rule is on", () => {
-    const { state, rng } = newPlayingGame(3);
+    const { state, rng } = newPlayingGame(3, { allowDrawFromDiscard: false });
     state.discardPile = [card("4")];
     fail(state, { type: "draw", playerId: currentId(state), from: "discard" }, rng, "notAllowed");
 
