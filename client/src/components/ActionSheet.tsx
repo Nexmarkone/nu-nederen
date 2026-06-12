@@ -33,7 +33,12 @@ export function ActionSheet() {
           transition={{ type: "spring", stiffness: 320, damping: 30 }}
         >
           <div className="flex items-center gap-4">
-            <PlayingCard card={drawnCard} className="w-20 shrink-0" />
+            <PlayingCard
+              card={drawnCard}
+              className="w-20 shrink-0"
+              layoutCardId={drawnCard.id}
+              shadow
+            />
             <div className="flex min-w-0 flex-1 flex-col gap-2">
               <p className="text-sm font-semibold text-cream/85">Du trak et kort. Hvad nu?</p>
               <button

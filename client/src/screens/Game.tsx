@@ -201,23 +201,29 @@ export function Game() {
         ))}
       </div>
 
-      {/* Piles */}
-      <div className="z-10 my-auto flex items-center justify-center gap-10 py-3">
-        <DrawPile
-          count={game.drawCount}
-          active={myTurn && game.turnStage === "draw"}
-          onTap={myTurn && game.turnStage === "draw" ? () => act({ type: "draw" }) : undefined}
-        />
-        <DiscardPile
-          cards={game.discardPile}
-          takeable={
-            myTurn &&
-            game.turnStage === "draw" &&
-            game.rules.allowDrawFromDiscard &&
-            game.discardPile.length > 0
-          }
-          onTake={() => act({ type: "draw", from: "discard" })}
-        />
+      {/* Piles — on a softly tilted 3D table plane */}
+      <div className="z-10 my-auto py-3" style={{ perspective: 900 }}>
+        <div
+          className="relative flex items-center justify-center gap-10"
+          style={{ transform: reduce ? undefined : "rotateX(16deg)", transformStyle: "preserve-3d" }}
+        >
+          <div className="absolute inset-x-8 -bottom-4 h-7 rounded-[50%] bg-black/35 blur-lg" />
+          <DrawPile
+            count={game.drawCount}
+            active={myTurn && game.turnStage === "draw"}
+            onTap={myTurn && game.turnStage === "draw" ? () => act({ type: "draw" }) : undefined}
+          />
+          <DiscardPile
+            cards={game.discardPile}
+            takeable={
+              myTurn &&
+              game.turnStage === "draw" &&
+              game.rules.allowDrawFromDiscard &&
+              game.discardPile.length > 0
+            }
+            onTake={() => act({ type: "draw", from: "discard" })}
+          />
+        </div>
       </div>
 
       {/* Status line */}
@@ -248,6 +254,7 @@ export function Game() {
             targetable={abilityTargeting || (swapSelecting && myTurn)}
             jumpable={!!windowOpen}
             selectedRef={abilityFirstPick}
+            shadow
           />
           <div className="flex items-center gap-2.5">
             <div className="relative">

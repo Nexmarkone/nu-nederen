@@ -154,6 +154,10 @@ export interface PlayingCardProps {
   glowGold?: boolean;
   layoutCardId?: string;
   dimmed?: boolean;
+  /** Fly-in deal animation (seconds of stagger). Cards spin in from the deck. */
+  dealDelay?: number;
+  /** Soft drop shadow for table depth (used on big cards). */
+  shadow?: boolean;
 }
 
 export function PlayingCard({
@@ -167,9 +171,12 @@ export function PlayingCard({
   glowGold,
   layoutCardId,
   dimmed,
+  dealDelay,
+  shadow,
 }: PlayingCardProps) {
   const reduce = useReducedMotion();
   const faceUp = !!card;
+  const dealt = dealDelay !== undefined && !reduce;
 
   const ring = failFlash
     ? "ring-4 ring-signal-red"
@@ -186,10 +193,19 @@ export function PlayingCard({
       layoutId={layoutCardId}
       layout={layoutCardId ? true : undefined}
       className={`relative aspect-[5/7] ${className} ${dimmed ? "opacity-50" : ""}`}
-      style={{ perspective: 600 }}
+      style={{
+        perspective: 600,
+        filter: shadow ? "drop-shadow(0 6px 8px rgba(0,0,0,0.4))" : undefined,
+      }}
       onClick={onClick}
       whileTap={onClick && !reduce ? { scale: 0.94 } : undefined}
-      transition={{ type: "spring", stiffness: 420, damping: 32 }}
+      initial={
+        dealt
+          ? { y: -180, x: 40, rotate: -24 + ((dealDelay! * 100) % 36), scale: 0.55, opacity: 0 }
+          : false
+      }
+      animate={dealt ? { y: 0, x: 0, rotate: 0, scale: 1, opacity: 1 } : undefined}
+      transition={{ type: "spring", stiffness: 420, damping: 32, delay: dealDelay ?? 0 }}
     >
       <motion.div
         className={`absolute inset-0 rounded-[14%/10%] ${ring} ${glowGold ? "glow-gold" : ""}`}

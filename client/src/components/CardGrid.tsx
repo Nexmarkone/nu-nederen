@@ -30,6 +30,8 @@ export interface CardGridProps {
   jumpable?: boolean;
   selectedRef?: GridRef | null;
   glowGoldIds?: Set<string>;
+  /** Drop shadows for table depth (big grids). */
+  shadow?: boolean;
 }
 
 export function CardGrid({
@@ -40,6 +42,7 @@ export function CardGrid({
   jumpable,
   selectedRef,
   glowGoldIds,
+  shadow,
 }: CardGridProps) {
   const peeks = useStore((s) => s.peeks);
   const highlights = useStore((s) => s.highlights);
@@ -67,6 +70,8 @@ export function CardGrid({
             failFlash={!!failFlash[key]}
             jumpable={jumpable || (targetable && !isSelected)}
             glowGold={glowGoldIds?.has(c.id)}
+            dealDelay={i * 0.07}
+            shadow={shadow}
             onClick={onCardTap ? () => onCardTap({ playerId: player.id, gridIndex: i }) : undefined}
           />
         );

@@ -82,7 +82,7 @@ export function DiscardPile({
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: "spring", stiffness: 380, damping: 18 }}
           >
-            <PlayingCard card={top} className="w-[72px]" layoutCardId={top.id} />
+            <PlayingCard card={top} className="w-[72px]" layoutCardId={top.id} shadow />
           </motion.div>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center rounded-xl border-2 border-dashed border-cream/15 text-[10px] text-cream/40">
