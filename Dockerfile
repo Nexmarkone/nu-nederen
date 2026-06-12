@@ -22,6 +22,9 @@ WORKDIR /app
 COPY --from=build /app/server/dist ./server/dist
 COPY --from=build /app/client/dist ./client/dist
 
+# Writable dir for the persistent leaderboard (mount a volume here).
+RUN mkdir -p /app/data && chown -R node:node /app/data
+
 EXPOSE 8080
 USER node
 CMD ["node", "server/dist/index.js"]

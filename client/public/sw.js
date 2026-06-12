@@ -1,7 +1,7 @@
 // Service worker: cache-first for static assets, network-only for WS/API.
 // The game itself needs the network — offline we just show the cached shell.
 
-const CACHE = "nu-nederen-v2";
+const CACHE = "nu-nederen-v3";
 const SHELL = ["/", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {

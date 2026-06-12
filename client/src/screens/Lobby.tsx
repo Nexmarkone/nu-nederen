@@ -9,6 +9,7 @@ import {
   type HouseRules,
 } from "@nu/shared";
 import { useStore } from "../store";
+import { ChatPanel } from "../components/ChatPanel";
 
 const DIFF_LABEL: Record<BotDifficulty, string> = {
   easy: "🟢 Let",
@@ -314,6 +315,8 @@ export function Lobby() {
           </p>
         )}
       </div>
+
+      <ChatPanel corner="right" />
     </div>
   );
 }

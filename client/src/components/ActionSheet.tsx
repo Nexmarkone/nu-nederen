@@ -26,7 +26,7 @@ export function ActionSheet() {
       {open && drawnCard && (
         <motion.div
           key="actionsheet"
-          className="glass fixed inset-x-2 bottom-2 z-30 rounded-3xl p-4 pb-[calc(env(safe-area-inset-bottom)+12px)] shadow-2xl"
+          className="glass fixed inset-x-2 bottom-2 z-30 mx-auto max-w-md rounded-3xl p-4 pb-[calc(env(safe-area-inset-bottom)+12px)] shadow-2xl"
           initial={{ y: 220, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 220, opacity: 0 }}

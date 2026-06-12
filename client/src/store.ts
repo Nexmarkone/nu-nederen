@@ -6,6 +6,7 @@ import {
   DEFAULT_RULES,
   type BotDifficulty,
   type Card,
+  type ChatMessage,
   type GameEvent,
   type GridRef,
   type HouseRules,
@@ -28,7 +29,7 @@ import {
 } from "./audio";
 import { GameSocket, type SocketStatus } from "./ws";
 
-export type Screen = "home" | "lobby" | "game" | "rules";
+export type Screen = "home" | "lobby" | "game" | "rules" | "topliste";
 
 export interface ActivePeek {
   id: number;
@@ -104,6 +105,8 @@ export interface StoreState {
   joinCodeInput: string;
   joining: boolean;
   reactions: FloatingReaction[];
+  chatMessages: ChatMessage[];
+  chatSeen: number;
   // Actions
   setName(name: string): void;
   setAvatar(avatar: string): void;
@@ -120,6 +123,8 @@ export interface StoreState {
   rematch(): void;
   act(action: PlayerAction): void;
   sendReaction(emoji: ReactionEmoji): void;
+  sendChat(text: string): void;
+  markChatSeen(): void;
   kickPlayer(playerId: string): void;
   setSwapSelecting(on: boolean): void;
   setAbilityFirstPick(ref: GridRef | null): void;
@@ -157,6 +162,8 @@ export const useStore = create<StoreState>((set, get) => ({
   joinCodeInput: "",
   joining: false,
   reactions: [],
+  chatMessages: [],
+  chatSeen: 0,
 
   setName(name) {
     localStorage.setItem(LS.name, name);
@@ -235,6 +242,12 @@ export const useStore = create<StoreState>((set, get) => ({
   },
   sendReaction(emoji) {
     socket.send({ type: "react", emoji });
+  },
+  sendChat(text) {
+    socket.send({ type: "chat", text });
+  },
+  markChatSeen() {
+    set((s) => ({ chatSeen: s.chatMessages.length }));
   },
   kickPlayer(playerId) {
     socket.send({ type: "kickPlayer", playerId });
@@ -465,6 +478,17 @@ function handleMessage(msg: ServerMessage): void {
     case "event":
       handleEvent(msg.event);
       break;
+
+    case "chat": {
+      set((s) => ({ chatMessages: [...s.chatMessages.slice(-49), msg.message] }));
+      if (msg.message.playerId !== state.playerId) sndTick();
+      break;
+    }
+
+    case "chatHistory": {
+      set({ chatMessages: msg.messages.slice(-50), chatSeen: msg.messages.length });
+      break;
+    }
 
     case "reaction": {
       const id = nextId++;

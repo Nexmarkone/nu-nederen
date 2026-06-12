@@ -10,6 +10,7 @@ import { Hono } from "hono";
 import { WebSocketServer, type WebSocket } from "ws";
 import { ClientMessageSchema, type ClientMessage, type ServerMessage } from "@nu/shared";
 import { Room, RoomError, RoomManager } from "./rooms.js";
+import { statsStore } from "./stats.js";
 
 const PORT = Number(process.env.PORT ?? 8080);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -42,6 +43,8 @@ const app = new Hono();
 app.get("/api/health", (c) =>
   c.json({ ok: true, rooms: manager.rooms.size, uptime: process.uptime() }),
 );
+
+app.get("/api/topliste", (c) => c.json(statsStore.top(50)));
 
 app.get("*", async (c) => {
   let pathname = decodeURIComponent(new URL(c.req.url).pathname);
@@ -131,6 +134,7 @@ function handleMessage(ws: WebSocket, session: Session, msg: ClientMessage): voi
       session.playerId = seat.id;
       send(ws, { type: "joined", playerId: seat.id, token: seat.token!, code: room.code });
       room.broadcastRoomState();
+      room.sendChatHistory(seat.id);
       return;
     }
 
@@ -177,6 +181,9 @@ function handleMessage(ws: WebSocket, session: Session, msg: ClientMessage): voi
       return;
     case "react":
       room.react(playerId, msg.emoji);
+      return;
+    case "chat":
+      room.chat(playerId, msg.text);
       return;
   }
 }

@@ -28,6 +28,8 @@ export interface LoopHost {
   sendAll(msg: ServerMessage): void;
   /** Ids of connected human players (receive state snapshots). */
   connectedHumanIds(): string[];
+  /** Called once when the game reaches gameOver (leaderboard bookkeeping). */
+  onGameOver?(state: GameState): void;
 }
 
 const DRAWN_PEEK_TTL_MS = 10 * 60 * 1000;
@@ -247,6 +249,7 @@ export class GameLoop {
       case "gameOver": {
         this.clearBotTimers();
         this.clearTurnTimer();
+        this.host.onGameOver?.(this.state);
         break;
       }
 

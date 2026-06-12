@@ -6,6 +6,7 @@ import { Game } from "./screens/Game";
 import { Home } from "./screens/Home";
 import { Lobby } from "./screens/Lobby";
 import { Rules } from "./screens/Rules";
+import { Topliste } from "./screens/Topliste";
 
 export default function App() {
   const screen = useStore((s) => s.screen);
@@ -23,6 +24,7 @@ export default function App() {
       {screen === "lobby" && <Lobby />}
       {screen === "game" && <Game />}
       {screen === "rules" && <Rules />}
+      {screen === "topliste" && <Topliste />}
       <Toasts />
     </div>
   );

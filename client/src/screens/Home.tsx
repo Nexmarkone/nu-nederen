@@ -153,12 +153,20 @@ export function Home() {
           </button>
         </div>
 
-        <button
-          className="mt-1 py-2 text-sm font-semibold text-cream/60 underline-offset-4 active:underline"
-          onClick={() => goto("rules")}
-        >
-          📖 Sådan spiller man
-        </button>
+        <div className="mt-1 flex justify-center gap-5">
+          <button
+            className="py-2 text-sm font-semibold text-cream/60 underline-offset-4 active:underline"
+            onClick={() => goto("rules")}
+          >
+            📖 Sådan spiller man
+          </button>
+          <button
+            className="py-2 text-sm font-semibold text-cream/60 underline-offset-4 active:underline"
+            onClick={() => goto("topliste")}
+          >
+            🏆 Topliste
+          </button>
+        </div>
       </motion.div>
 
       <div className="mt-auto pt-6 text-[11px] text-cream/35">

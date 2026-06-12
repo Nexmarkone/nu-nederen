@@ -3,3 +3,8 @@ services:
     build: .
     restart: unless-stopped
     ports: ["8080:8080"]
+    volumes:
+      - nu-data:/app/data # toplisten overlever genstart/opdatering
+
+volumes:
+  nu-data:

@@ -8,6 +8,8 @@ import {
   MAX_PLAYERS,
   MIN_PLAYERS,
   type BotDifficulty,
+  type ChatMessage,
+  type GameState,
   type HouseRules,
   type LobbyPlayer,
   type PlayerAction,
@@ -17,6 +19,7 @@ import {
 } from "@nu/shared";
 import { BOT_PROFILES } from "./bots.js";
 import { GameLoop } from "./gameLoop.js";
+import { statsStore } from "./stats.js";
 
 // Code alphabet without lookalikes (no O/I — and no digits at all).
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -53,6 +56,7 @@ export class Room {
   rules: HouseRules = { ...DEFAULT_RULES };
   loop: GameLoop | null = null;
   lastActivity = Date.now();
+  chatLog: ChatMessage[] = [];
 
   constructor(
     readonly code: string,
@@ -83,6 +87,10 @@ export class Room {
     return this.seats
       .filter((s) => s.ws && s.ws.readyState === s.ws.OPEN)
       .map((s) => s.id);
+  }
+
+  onGameOver(state: GameState): void {
+    statsStore.record(state);
   }
 
   // --- Lobby ------------------------------------------------------------------
@@ -262,6 +270,7 @@ export class Room {
 
   resync(playerId: string): void {
     this.sendTo(playerId, { type: "roomState", room: this.roomInfo() });
+    this.sendChatHistory(playerId);
     this.loop?.resyncPlayer(playerId);
   }
 
@@ -273,6 +282,32 @@ export class Room {
     if (now - seat.lastReactAt < 700) return; // spam guard, silently dropped
     seat.lastReactAt = now;
     this.sendAll({ type: "reaction", playerId, emoji });
+  }
+
+  /** Text chat — broadcast + kept in a short in-memory log for late joiners. */
+  chat(playerId: string, text: string): void {
+    const seat = this.seats.find((s) => s.id === playerId);
+    if (!seat) return;
+    const now = Date.now();
+    if (now - seat.lastReactAt < 600) return;
+    seat.lastReactAt = now;
+    const message: ChatMessage = {
+      playerId,
+      name: seat.name,
+      avatar: seat.avatar,
+      text,
+      ts: now,
+    };
+    this.chatLog.push(message);
+    if (this.chatLog.length > 30) this.chatLog.shift();
+    this.touch();
+    this.sendAll({ type: "chat", message });
+  }
+
+  sendChatHistory(playerId: string): void {
+    if (this.chatLog.length > 0) {
+      this.sendTo(playerId, { type: "chatHistory", messages: this.chatLog });
+    }
   }
 
   /**

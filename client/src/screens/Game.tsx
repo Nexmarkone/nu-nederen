@@ -9,6 +9,7 @@ import { useStore } from "../store";
 import { ActionSheet } from "../components/ActionSheet";
 import { BaguetteButton } from "../components/BaguetteButton";
 import { CardGrid } from "../components/CardGrid";
+import { ChatPanel } from "../components/ChatPanel";
 import { GameOverOverlay } from "../components/GameOverOverlay";
 import { OpponentSeat } from "../components/OpponentSeat";
 import { DiscardPile, DrawPile } from "../components/Piles";
@@ -146,7 +147,7 @@ export function Game() {
   return (
     <motion.div
       animate={shakeControls}
-      className="relative flex min-h-dvh flex-col px-3 pb-2 pt-[calc(env(safe-area-inset-top)+6px)]"
+      className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col px-3 pb-2 pt-[calc(env(safe-area-inset-top)+6px)]"
     >
       {/* Header */}
       <header className="z-10 flex items-center justify-between gap-2 py-1">
@@ -280,6 +281,7 @@ export function Game() {
       <ActionSheet />
       <BaguetteButton />
       <ReactionBar />
+      <ChatPanel />
       <ReactionOverlay />
 
       {/* Memorize overlay (non-blocking banner + countdown) */}
