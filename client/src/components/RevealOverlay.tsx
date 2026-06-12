@@ -43,6 +43,7 @@ export function RevealOverlay({ game }: { game: RedactedGameState }) {
   const playerId = useStore((s) => s.playerId);
   const room = useStore((s) => s.room);
   const act = useStore((s) => s.act);
+  const leaveRoom = useStore((s) => s.leaveRoom);
   const reduce = useReducedMotion();
   const reveal = game.reveal;
 
@@ -92,6 +93,13 @@ export function RevealOverlay({ game }: { game: RedactedGameState }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
     >
+      <button
+        className="absolute right-3 top-[calc(env(safe-area-inset-top)+10px)] z-10 flex h-9 w-9 items-center justify-center rounded-xl bg-felt-800/80 text-base text-cream/80"
+        onClick={leaveRoom}
+        aria-label="Forlad spillet"
+      >
+        ✕
+      </button>
       <h2 className="mb-3 text-center font-display text-2xl font-black tracking-wide text-gold-bright">
         Runde {game.roundNumber} — reveal!
       </h2>

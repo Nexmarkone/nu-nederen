@@ -553,14 +553,39 @@ function handleMessage(msg: ServerMessage): void {
       break;
 
     case "error": {
-      if (msg.code === "roomNotFound") {
-        // Stale session — clean up quietly if we were auto-rejoining.
+      // The room is gone (free server slept / restarted / expired). Recover
+      // gracefully instead of leaving the player stuck on a dead screen.
+      if (msg.code === "roomNotFound" || msg.code === "noRoom") {
         localStorage.removeItem(LS.session);
-        if (state.joining) {
+        const wasInGame =
+          state.screen === "game" ||
+          state.screen === "lobby" ||
+          state.room !== null ||
+          state.game !== null;
+        if (wasInGame) {
+          stopMusic();
+          set({
+            room: null,
+            game: null,
+            roomCode: null,
+            token: null,
+            playerId: null,
+            screen: "home",
+            drawnCard: null,
+            peeks: [],
+            windowDeadline: null,
+            banner: null,
+            swapSelecting: false,
+            abilityFirstPick: null,
+            joining: false,
+          });
+          useStore
+            .getState()
+            .toast("Spillet blev afbrudt (serveren sov eller genstartede). Start et nyt 🥖", "error");
+        } else if (state.joining) {
           set({ joining: false });
           useStore.getState().toast(msg.message, "error");
         }
-        if (state.screen !== "home" && !state.room) set({ screen: "home" });
         break;
       }
       set({ joining: false });
