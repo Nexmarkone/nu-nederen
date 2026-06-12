@@ -1,16 +1,16 @@
-// Real 3D table centrepiece (three.js / react-three-fiber): the draw and
-// discard piles rendered as 3D cards with thickness, lighting and shadows on a
-// felt podium. This replaces the flat central piles when 3D mode is on; the
-// rest of the game stays as the (glossy) HTML layer on top.
+// Real 3D table centrepiece (three.js / react-three-fiber): an immersive felt
+// table with the draw and discard piles as 3D cards — chunky deck, glossy
+// faces, warm lighting, soft shadows and a deal-in animation. Replaces the flat
+// central piles when 3D mode is on; the rest of the game stays as HTML on top.
 
 import { useEffect, useMemo, useRef } from "react";
-import { Canvas, useThree, type ThreeEvent } from "@react-three/fiber";
+import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
 import type { Card, Suit } from "@nu/shared";
 
 const CARD_W = 1;
 const CARD_H = 1.4;
-const CARD_T = 0.03;
+const CARD_T = 0.05;
 
 const SUIT_GLYPH: Record<Suit, string> = {
   hearts: "♥",
@@ -18,11 +18,11 @@ const SUIT_GLYPH: Record<Suit, string> = {
   spades: "♠",
   clubs: "♣",
 };
-const RED = "#B43A2E";
+const RED = "#C0392B";
 const INK = "#1E1B16";
 const GOLD = "#D2A24C";
 
-// --- Canvas textures for card faces/backs (cached by key) -------------------
+// --- Canvas textures (cached) ----------------------------------------------
 
 const texCache = new Map<string, THREE.CanvasTexture>();
 
@@ -43,22 +43,29 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
+function finalize(c: HTMLCanvasElement): THREE.CanvasTexture {
+  const tex = new THREE.CanvasTexture(c);
+  tex.anisotropy = 8;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 function faceTexture(card: Pick<Card, "rank" | "suit">): THREE.CanvasTexture {
   const key = `f-${card.rank}-${card.suit ?? "x"}`;
   const cached = texCache.get(key);
   if (cached) return cached;
-  const W = 256;
-  const H = 358;
+  const W = 410;
+  const H = 574;
   const [c, ctx] = makeCanvas(W, H);
-  // cream gradient
-  const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, "#FBF6E6");
+  const g = ctx.createLinearGradient(0, 0, W * 0.4, H);
+  g.addColorStop(0, "#FFFDF6");
+  g.addColorStop(0.5, "#F7F1DF");
   g.addColorStop(1, "#E4DAC0");
-  roundRect(ctx, 4, 4, W - 8, H - 8, 26);
+  roundRect(ctx, 6, 6, W - 12, H - 12, 40);
   ctx.fillStyle = g;
   ctx.fill();
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = "rgba(210,162,76,0.45)";
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = "rgba(210,162,76,0.55)";
   ctx.stroke();
 
   const isRed = card.suit === "hearts" || card.suit === "diamonds";
@@ -68,67 +75,101 @@ function faceTexture(card: Pick<Card, "rank" | "suit">): THREE.CanvasTexture {
 
   if (card.rank === "JOKER") {
     ctx.textAlign = "center";
-    ctx.font = "900 64px Outfit, Arial, sans-serif";
-    ctx.fillText("★", W / 2, H / 2 - 24);
-    ctx.font = "800 40px Outfit, Arial, sans-serif";
-    ctx.fillText("JOKER", W / 2, H / 2 + 60);
+    ctx.font = "900 110px Outfit, Arial, sans-serif";
+    ctx.fillText("★", W / 2, H / 2 - 30);
+    ctx.font = "800 60px Outfit, Arial, sans-serif";
+    ctx.fillText("JOKER", W / 2, H / 2 + 90);
   } else {
     const glyph = card.suit ? SUIT_GLYPH[card.suit] : "";
-    ctx.font = "800 54px Outfit, Arial, sans-serif";
-    ctx.fillText(card.rank, 20, 64);
-    ctx.font = "40px Arial, sans-serif";
-    ctx.fillText(glyph, 22, 108);
-    // center
+    ctx.font = "800 88px Outfit, Arial, sans-serif";
+    ctx.fillText(card.rank, 34, 104);
+    ctx.font = "62px Arial, sans-serif";
+    ctx.fillText(glyph, 38, 176);
     ctx.textAlign = "center";
-    ctx.font = "800 132px Outfit, Arial, sans-serif";
-    ctx.fillText(card.rank, W / 2, H / 2 + 56);
-    // bottom-right mirrored
+    ctx.font = "800 210px Outfit, Arial, sans-serif";
+    ctx.fillText(card.rank, W / 2, H / 2 + 86);
+    ctx.font = "76px Arial, sans-serif";
+    ctx.fillText(glyph, W / 2, H - 70);
     ctx.save();
-    ctx.translate(W - 20, H - 30);
+    ctx.translate(W - 34, H - 48);
     ctx.rotate(Math.PI);
     ctx.textAlign = "left";
-    ctx.font = "800 54px Outfit, Arial, sans-serif";
+    ctx.font = "800 88px Outfit, Arial, sans-serif";
     ctx.fillText(card.rank, 0, 0);
     ctx.restore();
   }
-
-  const tex = new THREE.CanvasTexture(c);
-  tex.anisotropy = 4;
-  tex.colorSpace = THREE.SRGBColorSpace;
-  texCache.set(key, tex);
-  return tex;
+  texCache.set(key, finalize(c));
+  return texCache.get(key)!;
 }
 
 function backTexture(): THREE.CanvasTexture {
   const key = "back";
-  const cached = texCache.get(key);
-  if (cached) return cached;
-  const W = 256;
-  const H = 358;
+  if (texCache.has(key)) return texCache.get(key)!;
+  const W = 410;
+  const H = 574;
   const [c, ctx] = makeCanvas(W, H);
-  const g = ctx.createRadialGradient(W / 2, H * 0.42, 20, W / 2, H / 2, H * 0.7);
-  g.addColorStop(0, "#1B4A33");
+  const g = ctx.createRadialGradient(W / 2, H * 0.42, 30, W / 2, H / 2, H * 0.75);
+  g.addColorStop(0, "#1F5439");
   g.addColorStop(1, "#0B1F16");
-  roundRect(ctx, 4, 4, W - 8, H - 8, 26);
+  roundRect(ctx, 6, 6, W - 12, H - 12, 40);
   ctx.fillStyle = g;
   ctx.fill();
-  ctx.lineWidth = 6;
+  ctx.lineWidth = 10;
   ctx.strokeStyle = GOLD;
   ctx.stroke();
-  ctx.fillStyle = "rgba(232,197,122,0.9)";
-  ctx.font = "70px Arial, sans-serif";
+  // gold lattice
+  ctx.strokeStyle = "rgba(232,197,122,0.25)";
+  ctx.lineWidth = 3;
+  for (let i = -H; i < W; i += 46) {
+    ctx.beginPath();
+    ctx.moveTo(i, 0);
+    ctx.lineTo(i + H, H);
+    ctx.stroke();
+  }
+  ctx.fillStyle = "rgba(232,197,122,0.95)";
+  ctx.font = "120px Arial, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("🥖", W / 2, H / 2 + 26);
-  const tex = new THREE.CanvasTexture(c);
-  tex.anisotropy = 4;
-  tex.colorSpace = THREE.SRGBColorSpace;
-  texCache.set(key, tex);
-  return tex;
+  ctx.fillText("🥖", W / 2, H / 2 + 42);
+  texCache.set(key, finalize(c));
+  return texCache.get(key)!;
+}
+
+function feltTexture(): THREE.CanvasTexture {
+  const key = "felt";
+  if (texCache.has(key)) return texCache.get(key)!;
+  const S = 512;
+  const [c, ctx] = makeCanvas(S, S);
+  const g = ctx.createRadialGradient(S / 2, S / 2, 40, S / 2, S / 2, S * 0.62);
+  g.addColorStop(0, "#1A4A33");
+  g.addColorStop(1, "#0C2418");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, S, S);
+  // subtle felt speckle
+  const img = ctx.getImageData(0, 0, S, S);
+  const data = img.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const n = (Math.sin(i * 12.9898) * 43758.5453) % 1;
+    const d = (n - Math.floor(n) - 0.5) * 14;
+    data[i] = Math.max(0, Math.min(255, (data[i] ?? 0) + d));
+    data[i + 1] = Math.max(0, Math.min(255, (data[i + 1] ?? 0) + d));
+    data[i + 2] = Math.max(0, Math.min(255, (data[i + 2] ?? 0) + d));
+  }
+  ctx.putImageData(img, 0, 0);
+  texCache.set(key, finalize(c));
+  return texCache.get(key)!;
 }
 
 // --- Card mesh --------------------------------------------------------------
 
-const EDGE_COLOR = new THREE.Color("#F0E8D0");
+const EDGE_COLOR = new THREE.Color("#EFE7CF");
+
+function cardMaterials(topTexture: THREE.Texture): THREE.Material[] {
+  const edge = new THREE.MeshStandardMaterial({ color: EDGE_COLOR, roughness: 0.55, metalness: 0.05 });
+  const top = new THREE.MeshStandardMaterial({ map: topTexture, roughness: 0.34, metalness: 0.04 });
+  const bottom = new THREE.MeshStandardMaterial({ color: EDGE_COLOR, roughness: 0.6 });
+  // Box faces: [+X,-X,+Y,-Y,+Z,-Z]; flat card -> +Z(index4) faces up.
+  return [edge, edge, edge, edge, top, bottom];
+}
 
 function CardMesh({
   position,
@@ -141,15 +182,7 @@ function CardMesh({
   topTexture: THREE.Texture;
   onClick?: (e: ThreeEvent<MouseEvent>) => void;
 }) {
-  // Box faces: [+X,-X,+Y,-Y,+Z,-Z]. The card lies flat (rotated -90° about X),
-  // so the local +Z face points up — that's index 4, where the texture goes.
-  const materials = useMemo(() => {
-    const edge = new THREE.MeshStandardMaterial({ color: EDGE_COLOR, roughness: 0.7 });
-    const top = new THREE.MeshStandardMaterial({ map: topTexture, roughness: 0.5 });
-    const bottom = new THREE.MeshStandardMaterial({ color: EDGE_COLOR, roughness: 0.7 });
-    return [edge, edge, edge, edge, top, bottom];
-  }, [topTexture]);
-
+  const materials = useMemo(() => cardMaterials(topTexture), [topTexture]);
   return (
     <mesh
       position={position}
@@ -166,13 +199,20 @@ function CardMesh({
 
 function DrawStack({ count, onDraw }: { count: number; onDraw?: () => void }) {
   const back = backTexture();
-  const shown = Math.min(Math.max(count, 0), 7);
+  const shown = Math.min(Math.max(count, 0), 9);
+  const ref = useRef<THREE.Group>(null);
+  // gentle invite bob when it's your turn to draw
+  useFrame((state) => {
+    if (ref.current) {
+      ref.current.position.y = onDraw ? Math.sin(state.clock.elapsedTime * 2) * 0.04 + 0.04 : 0;
+    }
+  });
   return (
-    <group position={[-0.95, 0, 0]}>
+    <group ref={ref} position={[-0.95, 0, 0]}>
       {Array.from({ length: shown }, (_, i) => (
         <CardMesh
           key={i}
-          position={[0, i * CARD_T * 1.05, 0]}
+          position={[0, i * CARD_T * 0.9, 0]}
           topTexture={back}
           onClick={i === shown - 1 && onDraw ? () => onDraw() : undefined}
         />
@@ -187,53 +227,72 @@ function DrawStack({ count, onDraw }: { count: number; onDraw?: () => void }) {
   );
 }
 
+function easeOut(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
+}
+
 function DiscardCard({ card, onTake }: { card: Card | null; onTake?: () => void }) {
+  const ref = useRef<THREE.Group>(null);
+  const prevId = useRef<string | null>(null);
+  const anim = useRef(1);
   const tex = card ? faceTexture(card) : null;
+
+  useEffect(() => {
+    if (card && card.id !== prevId.current) {
+      anim.current = 0; // (re)start the deal-in animation
+      prevId.current = card.id;
+    }
+  }, [card?.id]);
+
+  useFrame((state, delta) => {
+    const g = ref.current;
+    if (!g) return;
+    if (anim.current < 1) {
+      anim.current = Math.min(1, anim.current + delta * 2.4);
+      const e = easeOut(anim.current);
+      g.position.set(0.95 - (1 - e) * 0.5, 0.09 + (1 - e) * 1.7, (1 - e) * 0.3);
+      g.rotation.set(-Math.PI / 2, 0, 0.14 - (1 - e) * 1.3);
+    } else {
+      // settled — a barely-there float for life
+      g.position.y = 0.09 + Math.sin(state.clock.elapsedTime * 1.3) * 0.012;
+    }
+  });
+
   if (!tex) {
     return (
       <mesh position={[0.95, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <boxGeometry args={[CARD_W, CARD_H, CARD_T]} />
-        <meshStandardMaterial color="#0d2a1d" roughness={0.9} transparent opacity={0.6} />
+        <meshStandardMaterial color="#0d2a1d" roughness={0.9} transparent opacity={0.55} />
       </mesh>
     );
   }
   return (
-    <CardMesh
-      position={[0.95, 0.06, 0]}
-      rotation={[-Math.PI / 2, 0, 0.12]}
-      topTexture={tex}
-      onClick={onTake ? () => onTake() : undefined}
-    />
+    <group ref={ref} position={[0.95, 0.09, 0]} rotation={[-Math.PI / 2, 0, 0.14]}>
+      <mesh castShadow receiveShadow material={cardMaterials(tex)} onClick={onTake ? () => onTake() : undefined}>
+        <boxGeometry args={[CARD_W, CARD_H, CARD_T]} />
+      </mesh>
+    </group>
   );
 }
 
 function Felt() {
+  const tex = feltTexture();
   return (
-    <mesh position={[0, -0.04, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-      <circleGeometry args={[2.6, 48]} />
-      <meshStandardMaterial color="#123524" roughness={0.95} />
-    </mesh>
+    <group>
+      {/* table top */}
+      <mesh position={[0, -0.03, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <circleGeometry args={[3.4, 64]} />
+        <meshStandardMaterial map={tex} roughness={0.95} metalness={0} />
+      </mesh>
+      {/* gold rim */}
+      <mesh position={[0, -0.04, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[3.18, 3.4, 64]} />
+        <meshStandardMaterial color={GOLD} roughness={0.5} metalness={0.4} />
+      </mesh>
+    </group>
   );
 }
 
-/** Re-render on demand whenever the visible state changes. */
-function Invalidate({ deps }: { deps: unknown[] }) {
-  const invalidate = useThree((s) => s.invalidate);
-  useEffect(() => {
-    invalidate();
-    // a couple of frames so textures/shadows settle
-    const id = setTimeout(invalidate, 60);
-    return () => clearTimeout(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
-  return null;
-}
-
-/**
- * Explicitly size the renderer to its parent. r3f's auto-resize can fail to
- * fire in some embedded/iframe contexts, so we drive it ourselves to guarantee
- * the canvas always fills the table area with the correct aspect ratio.
- */
 function Resizer() {
   const gl = useThree((s) => s.gl);
   const camera = useThree((s) => s.camera);
@@ -243,11 +302,12 @@ function Resizer() {
     if (!parent) return;
     const apply = () => {
       const w = parent.clientWidth || 320;
-      const h = parent.clientHeight || 220;
+      const h = parent.clientHeight || 300;
       gl.setSize(w, h, true);
-      if ((camera as THREE.PerspectiveCamera).isPerspectiveCamera) {
-        (camera as THREE.PerspectiveCamera).aspect = w / h;
-        camera.updateProjectionMatrix();
+      const cam = camera as THREE.PerspectiveCamera;
+      if (cam.isPerspectiveCamera) {
+        cam.aspect = w / h;
+        cam.updateProjectionMatrix();
       }
       invalidate();
     };
@@ -275,41 +335,40 @@ export interface Table3DProps {
 }
 
 export function Table3D({ drawCount, discardTop, canDraw, canTake, onDraw, onTake }: Table3DProps) {
-  const topKey = discardTop ? discardTop.id : "none";
-  const ref = useRef<HTMLDivElement>(null);
-
   return (
-    <div ref={ref} className="table3d-host relative h-[230px] w-full">
+    <div className="table3d-host relative h-[340px] w-full">
       <Canvas
         shadows
-        frameloop="demand"
+        frameloop="always"
         dpr={[1, 2]}
-        camera={{ position: [0, 3.4, 3.6], fov: 38 }}
+        camera={{ position: [0, 3.1, 4.0], fov: 34 }}
         gl={{ antialias: true, alpha: true }}
         style={{ background: "transparent" }}
+        onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
       >
-        <ambientLight intensity={0.55} />
+        <hemisphereLight args={["#cfe3d6", "#0a1c13", 0.7]} />
         <directionalLight
-          position={[2.5, 6, 3]}
-          intensity={1.5}
+          position={[3, 6.5, 3.5]}
+          intensity={1.7}
+          color="#fff4dd"
           castShadow
           shadow-mapSize-width={1024}
           shadow-mapSize-height={1024}
           shadow-camera-near={1}
-          shadow-camera-far={20}
-          shadow-camera-left={-4}
-          shadow-camera-right={4}
-          shadow-camera-top={4}
-          shadow-camera-bottom={-4}
+          shadow-camera-far={24}
+          shadow-camera-left={-5}
+          shadow-camera-right={5}
+          shadow-camera-top={5}
+          shadow-camera-bottom={-5}
+          shadow-bias={-0.0005}
         />
-        <pointLight position={[-3, 2, -2]} intensity={0.4} color="#E8C57A" />
+        <pointLight position={[-3.5, 2.5, -2]} intensity={0.6} color="#E8C57A" />
         <Resizer />
         <Felt />
         <DrawStack count={drawCount} onDraw={canDraw ? onDraw : undefined} />
         <DiscardCard card={discardTop} onTake={canTake ? onTake : undefined} />
-        <Invalidate deps={[drawCount, topKey, canDraw, canTake]} />
       </Canvas>
-      <div className="pointer-events-none absolute inset-x-0 bottom-1 flex justify-between px-10 text-[11px] font-semibold text-cream/55">
+      <div className="pointer-events-none absolute inset-x-0 bottom-1 flex justify-between px-8 text-[11px] font-semibold text-cream/60">
         <span>{drawCount} kort</span>
         <span>{canTake ? "Tag toppen?" : "Afkast"}</span>
       </div>

@@ -152,8 +152,8 @@ export const useStore = create<StoreState>((set, get) => ({
   avatar: localStorage.getItem(LS.avatar) ?? "🦊",
   muted: localStorage.getItem(LS.muted) === "1",
   music: false,
-  // 3D table is opt-in (beta) — verified on real devices, not the test preview.
-  threeD: localStorage.getItem(LS.threeD) === "1",
+  // 3D table on by default; toggle persists. Set "0" to disable.
+  threeD: localStorage.getItem(LS.threeD) !== "0",
   playerId: null,
   roomCode: null,
   token: null,
