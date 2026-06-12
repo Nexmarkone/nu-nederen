@@ -1,0 +1,16 @@
+# Render.com Blueprint — gratis hosting af Nu Nederen.
+# Render bygger Dockerfilen, sætter selv $PORT (serveren læser den automatisk)
+# og holder spillet kørende. Gratis-planen sover efter 15 min uden spillere og
+# vågner igen på ~1 min når nogen åbner linket.
+
+services:
+  - type: web
+    name: nu-nederen
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
