@@ -83,6 +83,12 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("kickPlayer"), playerId: z.string() }),
   z.object({ type: z.literal("react"), emoji: ReactionEmojiSchema }),
   z.object({ type: z.literal("chat"), text: z.string().trim().min(1).max(200) }),
+  // Walkie-talkie: a short voice clip as base64 audio (capped server-side too).
+  z.object({
+    type: z.literal("voice"),
+    data: z.string().max(500_000),
+    mime: z.string().max(60),
+  }),
   z.object({ type: z.literal("ping"), t: z.number().optional() }),
 ]);
 
@@ -303,6 +309,14 @@ export const ServerMessageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("reaction"), playerId: z.string(), emoji: ReactionEmojiSchema }),
   z.object({ type: z.literal("chat"), message: ChatMessageSchema }),
   z.object({ type: z.literal("chatHistory"), messages: z.array(ChatMessageSchema) }),
+  z.object({
+    type: z.literal("voice"),
+    playerId: z.string(),
+    name: z.string(),
+    avatar: z.string(),
+    data: z.string().max(500_000),
+    mime: z.string().max(60),
+  }),
   z.object({ type: z.literal("kicked") }),
   z.object({ type: z.literal("leftRoom") }),
   z.object({ type: z.literal("error"), code: z.string(), message: z.string() }),

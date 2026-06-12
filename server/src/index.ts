@@ -190,6 +190,9 @@ function handleMessage(ws: WebSocket, session: Session, msg: ClientMessage): voi
     case "chat":
       room.chat(playerId, msg.text);
       return;
+    case "voice":
+      room.voice(playerId, msg.data, msg.mime);
+      return;
   }
 }
 

@@ -16,6 +16,7 @@ import { OpponentSeat } from "../components/OpponentSeat";
 import { DiscardPile, DrawPile } from "../components/Piles";
 import { ReactionBar, ReactionOverlay } from "../components/Reactions";
 import { RevealOverlay } from "../components/RevealOverlay";
+import { WalkieTalkie } from "../components/WalkieTalkie";
 
 function Countdown({ deadline, totalMs }: { deadline: number; totalMs: number }) {
   const [, force] = useState(0);
@@ -301,6 +302,7 @@ export function Game() {
 
       <ActionSheet />
       <BaguetteButton />
+      <WalkieTalkie />
       <ReactionBar />
       <ChatPanel />
       <ReactionOverlay />

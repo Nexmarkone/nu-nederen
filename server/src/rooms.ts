@@ -48,6 +48,7 @@ interface Seat {
   ws: WebSocket | null;
   graceTimer: ReturnType<typeof setTimeout> | null;
   lastReactAt: number;
+  lastVoiceAt: number;
 }
 
 export class Room {
@@ -137,6 +138,7 @@ export class Room {
       ws,
       graceTimer: null,
       lastReactAt: 0,
+      lastVoiceAt: 0,
     };
     this.seats.push(seat);
     if (!this.hostId) this.hostId = seat.id;
@@ -193,6 +195,7 @@ export class Room {
       ws: null,
       graceTimer: null,
       lastReactAt: 0,
+      lastVoiceAt: 0,
     });
     this.touch();
     this.broadcastRoomState();
@@ -282,6 +285,24 @@ export class Room {
     if (now - seat.lastReactAt < 700) return; // spam guard, silently dropped
     seat.lastReactAt = now;
     this.sendAll({ type: "reaction", playerId, emoji });
+  }
+
+  /** Walkie-talkie: relay a short voice clip to everyone in the room. */
+  voice(playerId: string, data: string, mime: string): void {
+    const seat = this.seats.find((s) => s.id === playerId);
+    if (!seat) return;
+    const now = Date.now();
+    if (now - seat.lastVoiceAt < 800) return; // light anti-spam, silently dropped
+    seat.lastVoiceAt = now;
+    this.touch();
+    this.sendAll({
+      type: "voice",
+      playerId,
+      name: seat.name,
+      avatar: seat.avatar,
+      data,
+      mime,
+    });
   }
 
   /** Text chat — broadcast + kept in a short in-memory log for late joiners. */

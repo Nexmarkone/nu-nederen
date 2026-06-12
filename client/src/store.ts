@@ -30,6 +30,7 @@ import {
   startMusic,
   stopMusic,
 } from "./audio";
+import { playVoice } from "./voice";
 import { GameSocket, type SocketStatus } from "./ws";
 
 export type Screen = "home" | "lobby" | "game" | "rules" | "topliste";
@@ -129,6 +130,7 @@ export interface StoreState {
   rematch(): void;
   act(action: PlayerAction): void;
   sendReaction(emoji: ReactionEmoji): void;
+  sendVoice(data: string, mime: string): void;
   sendChat(text: string): void;
   markChatSeen(): void;
   kickPlayer(playerId: string): void;
@@ -257,6 +259,9 @@ export const useStore = create<StoreState>((set, get) => ({
   },
   sendReaction(emoji) {
     socket.send({ type: "react", emoji });
+  },
+  sendVoice(data, mime) {
+    socket.send({ type: "voice", data, mime });
   },
   sendChat(text) {
     socket.send({ type: "chat", text });
@@ -502,6 +507,16 @@ function handleMessage(msg: ServerMessage): void {
 
     case "chatHistory": {
       set({ chatMessages: msg.messages.slice(-50), chatSeen: msg.messages.length });
+      break;
+    }
+
+    case "voice": {
+      // Play everyone's clips (including a tiny echo of your own is avoided:
+      // skip if it's me — I already heard myself speak).
+      if (msg.playerId !== state.playerId) {
+        playVoice(msg.data, msg.mime);
+        useStore.getState().toast(`🎙️ ${msg.avatar} ${msg.name} taler…`, "info");
+      }
       break;
     }
 
