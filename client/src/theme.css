@@ -119,6 +119,15 @@ input {
     0 0 14px rgba(232, 197, 122, 0.35);
 }
 
+/* Make sure the 3D canvas always fills its container, even if the engine's
+   own resize observer is slow to fire in some browsers. */
+.table3d-host canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  touch-action: manipulation;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .card-gloss {
     mix-blend-mode: normal;

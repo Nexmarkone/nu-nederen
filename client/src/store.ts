@@ -67,6 +67,7 @@ const LS = {
   avatar: "nn:avatar",
   muted: "nn:muted",
   music: "nn:music",
+  threeD: "nn:threed",
   session: "nn:session",
   hint: "nn:installHintSeen",
 };
@@ -88,6 +89,7 @@ export interface StoreState {
   avatar: string;
   muted: boolean;
   music: boolean;
+  threeD: boolean;
   playerId: string | null;
   roomCode: string | null;
   token: string | null;
@@ -118,6 +120,7 @@ export interface StoreState {
   setAvatar(avatar: string): void;
   toggleMute(): void;
   toggleMusic(): void;
+  toggleThreeD(): void;
   goto(screen: Screen): void;
   setJoinCodeInput(code: string): void;
   createRoom(solo: boolean): void;
@@ -149,6 +152,8 @@ export const useStore = create<StoreState>((set, get) => ({
   avatar: localStorage.getItem(LS.avatar) ?? "🦊",
   muted: localStorage.getItem(LS.muted) === "1",
   music: false,
+  // 3D table is opt-in (beta) — verified on real devices, not the test preview.
+  threeD: localStorage.getItem(LS.threeD) === "1",
   playerId: null,
   roomCode: null,
   token: null,
@@ -194,6 +199,11 @@ export const useStore = create<StoreState>((set, get) => ({
     if (music) startMusic();
     else stopMusic();
     set({ music });
+  },
+  toggleThreeD() {
+    const threeD = !get().threeD;
+    localStorage.setItem(LS.threeD, threeD ? "1" : "0");
+    set({ threeD });
   },
   goto(screen) {
     set((s) => ({ screen, previousScreen: s.screen }));

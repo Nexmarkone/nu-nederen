@@ -2,7 +2,7 @@
 // your big 2x2 grid in the thumb zone, action sheet, jump ring, baguette
 // button and all phase overlays.
 
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { AnimatePresence, motion, useAnimationControls, useReducedMotion } from "motion/react";
 import type { GridRef } from "@nu/shared";
 import { useStore } from "../store";
@@ -15,6 +15,11 @@ import { GameOverOverlay } from "../components/GameOverOverlay";
 import { OpponentSeat } from "../components/OpponentSeat";
 import { DiscardPile, DrawPile } from "../components/Piles";
 import { ReactionBar, ReactionOverlay } from "../components/Reactions";
+
+// three.js is heavy — only load it when 3D mode is actually shown.
+const Table3D = lazy(() =>
+  import("../components/Table3D").then((m) => ({ default: m.Table3D })),
+);
 import { RevealOverlay } from "../components/RevealOverlay";
 import { WalkieTalkie } from "../components/WalkieTalkie";
 
@@ -45,6 +50,8 @@ export function Game() {
   const toggleMute = useStore((s) => s.toggleMute);
   const music = useStore((s) => s.music);
   const toggleMusic = useStore((s) => s.toggleMusic);
+  const threeD = useStore((s) => s.threeD);
+  const toggleThreeD = useStore((s) => s.toggleThreeD);
   const leaveRoom = useStore((s) => s.leaveRoom);
   const act = useStore((s) => s.act);
   const toast = useStore((s) => s.toast);
@@ -175,6 +182,15 @@ export function Game() {
             </span>
           )}
           <button
+            className={`glass flex h-9 items-center justify-center rounded-xl px-2 text-[11px] font-bold ${
+              threeD ? "text-gold-bright ring-1 ring-gold-bright" : "text-cream/70"
+            }`}
+            onClick={toggleThreeD}
+            aria-label={threeD ? "Slå 3D fra" : "Slå 3D til"}
+          >
+            3D
+          </button>
+          <button
             className={`glass flex h-9 w-9 items-center justify-center rounded-xl text-base ${
               music ? "ring-1 ring-gold-bright" : ""
             }`}
@@ -216,30 +232,57 @@ export function Game() {
         ))}
       </div>
 
-      {/* Piles — on a softly tilted 3D table plane */}
-      <div className="z-10 my-auto py-3" style={{ perspective: 900 }}>
-        <div
-          className="relative flex items-center justify-center gap-10"
-          style={{ transform: reduce ? undefined : "rotateX(16deg)", transformStyle: "preserve-3d" }}
-        >
-          <div className="absolute inset-x-8 -bottom-4 h-7 rounded-[50%] bg-black/35 blur-lg" />
-          <DrawPile
-            count={game.drawCount}
-            active={myTurn && game.turnStage === "draw"}
-            onTap={myTurn && game.turnStage === "draw" ? () => act({ type: "draw" }) : undefined}
-          />
-          <DiscardPile
-            cards={game.discardPile}
-            takeable={
-              myTurn &&
-              game.turnStage === "draw" &&
-              game.rules.allowDrawFromDiscard &&
-              game.discardPile.length > 0
-            }
-            onTake={() => act({ type: "draw", from: "discard" })}
-          />
+      {/* Piles — real 3D table when enabled, otherwise the CSS-3D version */}
+      {threeD ? (
+        <div className="relative z-10 my-auto w-full">
+          <Suspense fallback={<div className="h-[230px] w-full animate-pulse" />}>
+            <Table3D
+              drawCount={game.drawCount}
+              discardTop={game.discardPile.at(-1) ?? null}
+              canDraw={myTurn && game.turnStage === "draw"}
+              canTake={
+                myTurn &&
+                game.turnStage === "draw" &&
+                game.rules.allowDrawFromDiscard &&
+                game.discardPile.length > 0
+              }
+              onDraw={() => act({ type: "draw" })}
+              onTake={() => act({ type: "draw", from: "discard" })}
+            />
+          </Suspense>
+          {windowOpen && (
+            <div className="pointer-events-none absolute inset-x-0 top-2 flex justify-center">
+              <span className="pulse-gold rounded-full bg-gold/25 px-3 py-1 text-xs font-black text-gold-bright">
+                ⚡ JUMP!
+              </span>
+            </div>
+          )}
         </div>
-      </div>
+      ) : (
+        <div className="z-10 my-auto py-3" style={{ perspective: 900 }}>
+          <div
+            className="relative flex items-center justify-center gap-10"
+            style={{ transform: reduce ? undefined : "rotateX(16deg)", transformStyle: "preserve-3d" }}
+          >
+            <div className="absolute inset-x-8 -bottom-4 h-7 rounded-[50%] bg-black/35 blur-lg" />
+            <DrawPile
+              count={game.drawCount}
+              active={myTurn && game.turnStage === "draw"}
+              onTap={myTurn && game.turnStage === "draw" ? () => act({ type: "draw" }) : undefined}
+            />
+            <DiscardPile
+              cards={game.discardPile}
+              takeable={
+                myTurn &&
+                game.turnStage === "draw" &&
+                game.rules.allowDrawFromDiscard &&
+                game.discardPile.length > 0
+              }
+              onTake={() => act({ type: "draw", from: "discard" })}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Status line */}
       <div className="z-10 flex min-h-9 flex-col items-center justify-center gap-1 pb-1.5">
