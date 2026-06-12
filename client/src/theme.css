@@ -83,6 +83,49 @@ input {
   border: 1px solid rgba(232, 197, 122, 0.16);
 }
 
+/* Premium card sheen — a soft diagonal gloss over every card */
+.card-gloss {
+  position: absolute;
+  inset: 0;
+  border-radius: 14% / 10%;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.38) 0%,
+    rgba(255, 255, 255, 0.08) 26%,
+    rgba(255, 255, 255, 0) 52%,
+    rgba(0, 0, 0, 0.06) 100%
+  );
+  mix-blend-mode: screen;
+}
+
+/* Soft vignette + felt depth around the whole table */
+#root::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    130% 100% at 50% 38%,
+    rgba(0, 0, 0, 0) 52%,
+    rgba(0, 0, 0, 0.28) 100%
+  );
+}
+
+.gold-bloom {
+  text-shadow:
+    0 0 1px rgba(232, 197, 122, 0.6),
+    0 0 14px rgba(232, 197, 122, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-gloss {
+    mix-blend-mode: normal;
+    opacity: 0.5;
+  }
+}
+
 .safe-top {
   padding-top: env(safe-area-inset-top);
 }

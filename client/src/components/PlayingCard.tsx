@@ -27,10 +27,27 @@ function suitColor(card: FaceCard): string {
 export function CardFace({ card }: { card: FaceCard }) {
   const color = card.rank === "JOKER" ? GOLD : suitColor(card);
   const glyph = card.suit ? SUIT_GLYPH[card.suit] : "";
+  const gid = useId();
 
   return (
     <svg viewBox="0 0 100 140" className="h-full w-full" aria-hidden>
-      <rect x="1" y="1" width="98" height="138" rx="11" fill={CREAM} stroke={CREAM_DIM} />
+      <defs>
+        <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#FBF6E6" />
+          <stop offset="1" stopColor={CREAM_DIM} />
+        </linearGradient>
+      </defs>
+      <rect x="1" y="1" width="98" height="138" rx="11" fill={`url(#${gid})`} stroke={CREAM_DIM} />
+      <rect
+        x="3.5"
+        y="3.5"
+        width="93"
+        height="133"
+        rx="9"
+        fill="none"
+        stroke="rgba(210,162,76,0.28)"
+        strokeWidth="0.8"
+      />
       {card.rank === "JOKER" ? (
         <g>
           {/* Jester hat */}
@@ -131,8 +148,12 @@ export function CardBack() {
             🥖
           </text>
         </pattern>
+        <radialGradient id={`${id}-bg`} cx="0.5" cy="0.42" r="0.75">
+          <stop offset="0" stopColor="#1B4A33" />
+          <stop offset="1" stopColor="#0B1F16" />
+        </radialGradient>
       </defs>
-      <rect x="1" y="1" width="98" height="138" rx="11" fill={FELT} stroke={GOLD} strokeWidth="2" />
+      <rect x="1" y="1" width="98" height="138" rx="11" fill={`url(#${id}-bg)`} stroke={GOLD} strokeWidth="2" />
       <rect x="7" y="7" width="86" height="126" rx="7" fill={`url(#${id})`} stroke={GOLD} strokeWidth="0.8" opacity="0.9" />
       <circle cx="50" cy="70" r="17" fill={FELT} stroke={GOLD} strokeWidth="1.5" />
       <text x="50" y="77" textAnchor="middle" fontSize="18">
@@ -218,12 +239,14 @@ export function PlayingCard({
       >
         <div className="absolute inset-0" style={{ backfaceVisibility: "hidden" }}>
           {card ? <CardFace card={card} /> : null}
+          {card ? <div className="card-gloss" /> : null}
         </div>
         <div
           className="absolute inset-0"
           style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
         >
           <CardBack />
+          <div className="card-gloss" />
         </div>
       </motion.div>
     </motion.div>

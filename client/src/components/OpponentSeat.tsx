@@ -47,11 +47,14 @@ export function OpponentSeat({
             transition={{ type: "spring", stiffness: 260, damping: 24 }}
           />
         )}
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-felt-700 text-lg shadow">
+        <div
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-b from-felt-700 to-felt-800 text-lg shadow-lg ring-1 ring-gold/40"
+          style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.45), inset 0 1px 1px rgba(255,255,255,0.12)" }}
+        >
           {player.avatar}
         </div>
         {isDealer && (
-          <span className="absolute -right-1.5 -top-1 rounded-full bg-cream px-1 text-[8px] font-black text-ink">
+          <span className="absolute -right-1.5 -top-1 rounded-full bg-cream px-1 text-[8px] font-black text-ink shadow">
             D
           </span>
         )}
@@ -59,12 +62,15 @@ export function OpponentSeat({
         {player.isBot && (
           <span className="absolute -bottom-1 -right-1.5 text-[10px]">🤖</span>
         )}
+        <span className="absolute -bottom-1 -left-1.5 rounded-full bg-felt-900/90 px-1 text-[8px] font-bold text-cream/80 ring-1 ring-gold/30">
+          {player.grid.filter((c) => c !== null).length}
+        </span>
       </div>
       <div className="max-w-16 truncate text-[10px] font-semibold leading-none text-cream/85">
         {player.name}
       </div>
-      <div className="text-[10px] font-bold leading-none text-gold-bright tabular-nums">
-        {player.totalScore} pt
+      <div className="gold-bloom text-[11px] font-extrabold leading-none text-gold-bright tabular-nums">
+        {player.totalScore}
       </div>
       <CardGrid
         player={player}

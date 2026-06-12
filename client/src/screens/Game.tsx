@@ -158,7 +158,7 @@ export function Game() {
       {/* Header */}
       <header className="z-10 flex items-center justify-between gap-2 py-1">
         <div className="flex items-center gap-2">
-          <span className="glass rounded-xl px-2.5 py-1 font-display text-sm font-extrabold tracking-[0.2em] text-gold-bright">
+          <span className="glass gold-bloom rounded-xl px-2.5 py-1 font-display text-sm font-extrabold tracking-[0.2em] text-gold-bright">
             {roomCode}
           </span>
           <span className="text-xs font-semibold text-cream/60">Runde {game.roundNumber}</span>
@@ -288,7 +288,7 @@ export function Game() {
               )}
             </div>
             <span className="text-sm font-bold">{me.name}</span>
-            <span className="rounded-full bg-felt-900/70 px-2.5 py-1 text-xs font-extrabold text-gold-bright tabular-nums">
+            <span className="gold-bloom rounded-full bg-felt-900/70 px-2.5 py-1 text-xs font-extrabold text-gold-bright tabular-nums">
               {me.totalScore} pt
             </span>
             {game.players[game.dealerIndex]?.id === me.id && (
