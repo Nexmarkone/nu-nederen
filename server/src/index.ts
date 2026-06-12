@@ -41,7 +41,12 @@ const MIME: Record<string, string> = {
 const app = new Hono();
 
 app.get("/api/health", (c) =>
-  c.json({ ok: true, rooms: manager.rooms.size, uptime: process.uptime() }),
+  c.json({
+    ok: true,
+    rooms: manager.rooms.size,
+    uptime: process.uptime(),
+    leaderboard: statsStore.status(),
+  }),
 );
 
 app.get("/api/topliste", (c) => c.json(statsStore.top(50)));

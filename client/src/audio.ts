@@ -135,3 +135,97 @@ export function sndFanfare(): void {
   seq.forEach((f, i) => tone(c, "triangle", f, t + i * 0.13, 0.18, 0.16));
   for (const f of [523.3, 659.3, 784]) tone(c, "sawtooth", f, t + 0.55, 0.9, 0.07);
 }
+
+/** Dealing whoosh — a quick run of ticks as cards fly out. */
+export function sndDeal(): void {
+  const c = ac();
+  if (!c) return;
+  const t = c.currentTime;
+  for (let i = 0; i < 4; i++) {
+    noiseBurst(c, t + i * 0.085, 0.045, "highpass", 2200, 0.13);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Optional ambient background music — a soft "card-night" loop.
+// Off by default; toggled by the user. Synthesised, no audio files.
+// ---------------------------------------------------------------------------
+
+let musicOn = false;
+let musicTimer: number | null = null;
+let musicGain: GainNode | null = null;
+let nextNoteTime = 0;
+let step = 0;
+
+// ii–V–I-ish jazzy progression (Am7 · Dm7 · G7 · Cmaj7), low and warm.
+const CHORDS: number[][] = [
+  [220.0, 261.63, 329.63, 392.0],
+  [146.83, 174.61, 220.0, 261.63],
+  [196.0, 246.94, 293.66, 349.23],
+  [261.63, 329.63, 392.0, 493.88],
+];
+
+function musicNote(
+  t0: number,
+  freq: number,
+  dur: number,
+  type: OscillatorType,
+  peak: number,
+): void {
+  if (!ctx || !musicGain) return;
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(peak, t0 + 0.18);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  osc.connect(g).connect(musicGain);
+  osc.start(t0);
+  osc.stop(t0 + dur + 0.05);
+}
+
+function musicTick(): void {
+  if (!ctx || !musicOn) return;
+  const beat = 60 / 64; // ~64 BPM, slow and cosy
+  while (nextNoteTime < ctx.currentTime + 0.3) {
+    const chord = CHORDS[Math.floor(step / 4) % CHORDS.length]!;
+    if (step % 4 === 0) {
+      // Soft pad on the chord for a whole bar.
+      for (const f of chord) musicNote(nextNoteTime, f, beat * 3.8, "sine", 0.05);
+    }
+    if (step % 2 === 0) {
+      // Sparse bell melody an octave up.
+      const f = chord[(step * 3) % chord.length]! * 2;
+      musicNote(nextNoteTime, f, beat * 0.9, "triangle", 0.035);
+    }
+    nextNoteTime += beat;
+    step += 1;
+  }
+}
+
+export function startMusic(): void {
+  unlockAudio();
+  if (!ctx) return;
+  if (!musicGain) {
+    musicGain = ctx.createGain();
+    musicGain.gain.value = 0.7;
+    musicGain.connect(ctx.destination);
+  }
+  musicOn = true;
+  nextNoteTime = ctx.currentTime + 0.15;
+  step = 0;
+  if (musicTimer === null) musicTimer = window.setInterval(musicTick, 90);
+}
+
+export function stopMusic(): void {
+  musicOn = false;
+  if (musicTimer !== null) {
+    clearInterval(musicTimer);
+    musicTimer = null;
+  }
+}
+
+export function isMusicOn(): boolean {
+  return musicOn;
+}

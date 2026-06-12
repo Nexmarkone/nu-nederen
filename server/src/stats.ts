@@ -19,6 +19,14 @@ interface Backend {
   load(): Promise<Entries>;
   save(entries: Entries): Promise<void>;
   readonly label: string;
+  readonly kind: "github" | "local";
+}
+
+export interface StatsStatus {
+  backend: "github" | "local";
+  loaded: boolean;
+  ok: boolean;
+  players: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -27,6 +35,7 @@ interface Backend {
 
 class LocalFileBackend implements Backend {
   readonly label: string;
+  readonly kind = "local" as const;
   constructor(private readonly file: string) {
     this.label = `lokal fil (${file})`;
   }
@@ -51,6 +60,7 @@ const GH_API = "https://api.github.com";
 
 class GitHubBackend implements Backend {
   readonly label: string;
+  readonly kind = "github" as const;
   private sha: string | null = null;
   private branchEnsured = false;
 
@@ -184,6 +194,8 @@ export class StatsStore {
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
   private saving = false;
   private dirty = false;
+  private loaded = false;
+  private loadOk = false;
 
   constructor(backend: Backend = chooseBackend()) {
     this.backend = backend;
@@ -191,13 +203,26 @@ export class StatsStore {
       .load()
       .then((e) => {
         this.entries = e;
+        this.loaded = true;
+        this.loadOk = true;
         console.log(
           `Topliste indlæst: ${Object.keys(e).length} spillere — backend: ${this.backend.label}`,
         );
       })
       .catch((err) => {
+        this.loaded = true;
+        this.loadOk = false;
         console.error(`Kunne ikke indlæse topliste (${this.backend.label}):`, err);
       });
+  }
+
+  status(): StatsStatus {
+    return {
+      backend: this.backend.kind,
+      loaded: this.loaded,
+      ok: this.loadOk,
+      players: Object.keys(this.entries).length,
+    };
   }
 
   /** Record a finished game. Deferred until the initial load completes. */

@@ -20,12 +20,15 @@ import {
 import {
   setMuted,
   sndBuzz,
+  sndDeal,
   sndFanfare,
   sndFlip,
   sndHorn,
   sndPling,
   sndSlam,
   sndTick,
+  startMusic,
+  stopMusic,
 } from "./audio";
 import { GameSocket, type SocketStatus } from "./ws";
 
@@ -62,6 +65,7 @@ const LS = {
   name: "nn:name",
   avatar: "nn:avatar",
   muted: "nn:muted",
+  music: "nn:music",
   session: "nn:session",
   hint: "nn:installHintSeen",
 };
@@ -82,6 +86,7 @@ export interface StoreState {
   name: string;
   avatar: string;
   muted: boolean;
+  music: boolean;
   playerId: string | null;
   roomCode: string | null;
   token: string | null;
@@ -111,6 +116,7 @@ export interface StoreState {
   setName(name: string): void;
   setAvatar(avatar: string): void;
   toggleMute(): void;
+  toggleMusic(): void;
   goto(screen: Screen): void;
   setJoinCodeInput(code: string): void;
   createRoom(solo: boolean): void;
@@ -140,6 +146,7 @@ export const useStore = create<StoreState>((set, get) => ({
   name: localStorage.getItem(LS.name) ?? "",
   avatar: localStorage.getItem(LS.avatar) ?? "🦊",
   muted: localStorage.getItem(LS.muted) === "1",
+  music: false,
   playerId: null,
   roomCode: null,
   token: null,
@@ -179,6 +186,13 @@ export const useStore = create<StoreState>((set, get) => ({
     setMuted(muted);
     set({ muted });
   },
+  toggleMusic() {
+    const music = !get().music;
+    localStorage.setItem(LS.music, music ? "1" : "0");
+    if (music) startMusic();
+    else stopMusic();
+    set({ music });
+  },
   goto(screen) {
     set((s) => ({ screen, previousScreen: s.screen }));
   },
@@ -208,6 +222,7 @@ export const useStore = create<StoreState>((set, get) => ({
   leaveRoom() {
     socket.send({ type: "leaveRoom" });
     localStorage.removeItem(LS.session);
+    stopMusic();
     set({
       room: null,
       game: null,
@@ -299,7 +314,7 @@ function handleEvent(ev: GameEvent): void {
         abilityFirstPick: null,
       });
       if (ev.roundNumber > 1) toast(`Runde ${ev.roundNumber} — nye kort!`);
-      sndFlip();
+      sndDeal();
       break;
 
     case "memorizeStarted":

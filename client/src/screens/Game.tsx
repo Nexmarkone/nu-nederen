@@ -42,6 +42,8 @@ export function Game() {
   const conn = useStore((s) => s.conn);
   const muted = useStore((s) => s.muted);
   const toggleMute = useStore((s) => s.toggleMute);
+  const music = useStore((s) => s.music);
+  const toggleMusic = useStore((s) => s.toggleMusic);
   const leaveRoom = useStore((s) => s.leaveRoom);
   const act = useStore((s) => s.act);
   const toast = useStore((s) => s.toast);
@@ -171,6 +173,15 @@ export function Game() {
               forbinder…
             </span>
           )}
+          <button
+            className={`glass flex h-9 w-9 items-center justify-center rounded-xl text-base ${
+              music ? "ring-1 ring-gold-bright" : ""
+            }`}
+            onClick={toggleMusic}
+            aria-label={music ? "Slå musik fra" : "Slå musik til"}
+          >
+            {music ? "🎵" : "🎶"}
+          </button>
           <button
             className="glass flex h-9 w-9 items-center justify-center rounded-xl text-base"
             onClick={toggleMute}
