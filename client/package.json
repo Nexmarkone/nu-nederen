@@ -1,0 +1,32 @@
+{
+  "name": "@nu/client",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fontsource/outfit": "^5.1.1",
+    "@nu/shared": "*",
+    "motion": "^12.0.6",
+    "qrcode": "^1.5.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zod": "^3.25.76",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.6",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.0.6",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.11"
+  }
+}

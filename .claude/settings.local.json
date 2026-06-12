@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(node --version)",
+      "PowerShell(npm --version)",
+      "PowerShell($cmds = @\\('docker','flyctl','fly','railway','git'\\); foreach \\($c in $cmds\\) { $found = Get-Command $c -ErrorAction SilentlyContinue; if \\($found\\) { \"$c => $\\($found.Source\\)\" } else { \"$c => NOT FOUND\" } })"
+    ]
+  }
+}
