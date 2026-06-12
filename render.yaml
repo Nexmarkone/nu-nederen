@@ -14,3 +14,12 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Persistent leaderboard: stats committed to the "data" branch of this repo.
+      - key: GITHUB_REPO
+        value: Nexmarkone/nu-nederen
+      - key: STATS_BRANCH
+        value: data
+      # Secret — set this manually in the Render dashboard (Environment tab).
+      # A fine-grained PAT with Contents: Read and write on the nu-nederen repo.
+      - key: GITHUB_TOKEN
+        sync: false
