@@ -24,10 +24,21 @@ export function OpponentSeat({
 }) {
   return (
     <div
-      className={`flex min-w-0 flex-col items-center gap-1 rounded-2xl p-1.5 ${
+      className={`relative flex min-w-0 flex-col items-center gap-1 rounded-2xl p-1.5 ${
         player.connected || player.isBot ? "" : "opacity-50"
       }`}
     >
+      {isCurrent && (
+        <motion.div
+          layoutId="turn-spotlight"
+          className="pointer-events-none absolute -inset-1 -z-10 rounded-2xl"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 30%, rgba(232,197,122,0.28) 0%, rgba(232,197,122,0) 70%)",
+          }}
+          transition={{ type: "spring", stiffness: 260, damping: 24 }}
+        />
+      )}
       <div className="relative">
         {isCurrent && (
           <motion.div
