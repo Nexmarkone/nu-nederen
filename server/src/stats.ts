@@ -15,10 +15,19 @@ import type { GameState, ToplisteEntry } from "@nu/shared";
 
 type Entries = Record<string, ToplisteEntry>;
 
-// Names used only for development/testing — never shown on, nor recorded to,
-// the public leaderboard. Keys are lowercased+trimmed, matching the entry keys.
-const RESERVED_TEST_NAMES = new Set(["testspiller", "test"]);
-const isReservedTestName = (key: string): boolean => RESERVED_TEST_NAMES.has(key);
+// Names hidden from the public leaderboard: dev/test accounts plus any the host
+// has asked us to remove (e.g. a duplicate left behind after someone renamed).
+// Keys are lowercased+trimmed, matching the entry keys. More can be added at any
+// time via the STATS_HIDDEN_NAMES env var (comma-separated) — no code change.
+const HIDDEN_NAMES = new Set(
+  [
+    "testspiller",
+    "test",
+    "jennifer pokorni", // omdøbt til "Fer"
+    ...(process.env.STATS_HIDDEN_NAMES ?? "").split(",").map((s) => s.trim().toLowerCase()),
+  ].filter(Boolean),
+);
+const isHiddenName = (key: string): boolean => HIDDEN_NAMES.has(key);
 
 interface Backend {
   load(): Promise<Entries>;
@@ -214,7 +223,7 @@ export class StatsStore {
         // Purge any stray test entries so they vanish from memory and from the
         // next save — the leaderboard self-cleans on the first boot after this.
         for (const key of Object.keys(e)) {
-          if (isReservedTestName(key)) delete e[key];
+          if (isHiddenName(key)) delete e[key];
         }
         this.entries = e;
         this.loaded = true;
@@ -251,7 +260,7 @@ export class StatsStore {
     for (const p of state.players) {
       if (p.isBot) continue;
       const key = p.name.trim().toLowerCase();
-      if (!key || isReservedTestName(key)) continue;
+      if (!key || isHiddenName(key)) continue;
       const e = (this.entries[key] ??= {
         name: p.name.trim(),
         avatar: p.avatar,
@@ -276,6 +285,7 @@ export class StatsStore {
 
   top(n = 50): ToplisteEntry[] {
     return Object.values(this.entries)
+      .filter((e) => !isHiddenName(e.name.trim().toLowerCase()))
       .sort((a, b) => b.wins - a.wins || a.nederen - b.nederen || b.games - a.games)
       .slice(0, n);
   }

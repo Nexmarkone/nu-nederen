@@ -34,6 +34,14 @@ export function Topliste() {
         komme på listen!
       </p>
 
+      {/* Legend so the icons make sense at a glance. */}
+      <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 text-[11px] text-cream/45">
+        <span>🏆 sejre</span>
+        <span>⚡ jump-ins</span>
+        <span>🥖 baguette-kald</span>
+        <span>nederen = gange tabt</span>
+      </div>
+
       {error && (
         <p className="py-8 text-center text-sm text-red-300">Kunne ikke hente toplisten 😢</p>
       )}
