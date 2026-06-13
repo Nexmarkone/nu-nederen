@@ -2,11 +2,22 @@
 
 import { useState } from "react";
 import { motion } from "motion/react";
+import type { BotDifficulty } from "@nu/shared";
 import { useStore } from "../store";
 import { InstallHint } from "../components/InstallHint";
 import { Logo } from "../components/Logo";
 
-const AVATARS = ["🦊", "🐻", "🐸", "🦁", "🐼", "🐙", "🦄", "🐷", "🐤", "😎", "👻", "🤠"];
+const AVATARS = [
+  "🦊", "🐻", "🐸", "🦁", "🐼", "🐙", "🦄", "🐷", "🐤", "😎", "👻", "🤠",
+  "🖕", "🐵", "🦖", "🐯", "🦈", "🤡", "👽", "🤖", "💀", "🐲", "🔥", "🥷",
+];
+
+// Solo difficulty options — maps the bot names the user knows to a level.
+const SOLO_LEVELS: { diff: BotDifficulty; label: string; sub: string; hot?: boolean }[] = [
+  { diff: "easy", label: "🐣 Let", sub: "Bot-Bente" },
+  { diff: "medium", label: "🤖 Mellem", sub: "Bot-Ib" },
+  { diff: "hard", label: "🧠 Ekstrem", sub: "MPC-Mogens", hot: true },
+];
 
 export function Home() {
   const name = useStore((s) => s.name);
@@ -23,6 +34,7 @@ export function Home() {
   const conn = useStore((s) => s.conn);
 
   const [nameOpen, setNameOpen] = useState(name === "");
+  const [soloOpen, setSoloOpen] = useState(false);
 
   const requireName = (): boolean => {
     if (name.trim() === "") {
@@ -123,10 +135,35 @@ export function Home() {
         <button
           className="rounded-2xl bg-felt-700 py-4 font-display text-lg font-extrabold text-cream shadow active:scale-[0.98] disabled:opacity-50"
           disabled={joining}
-          onClick={() => requireName() && createRoom(true)}
+          onClick={() => requireName() && setSoloOpen((v) => !v)}
         >
           🤖 Spil mod computeren
         </button>
+        {soloOpen && (
+          <motion.div
+            initial={{ y: -8, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="grid grid-cols-3 gap-2"
+          >
+            {SOLO_LEVELS.map((lvl) => (
+              <button
+                key={lvl.diff}
+                disabled={joining}
+                onClick={() => createRoom(true, lvl.diff)}
+                className={`flex flex-col items-center gap-0.5 rounded-2xl py-3 font-bold shadow active:scale-95 disabled:opacity-50 ${
+                  lvl.hot
+                    ? "bg-gradient-to-b from-gold-bright to-gold text-ink ring-2 ring-gold-bright"
+                    : "bg-felt-800 text-cream"
+                }`}
+              >
+                <span className="text-sm">{lvl.label}</span>
+                <span className={`text-[10px] ${lvl.hot ? "text-ink/70" : "text-cream/55"}`}>
+                  {lvl.sub}
+                </span>
+              </button>
+            ))}
+          </motion.div>
+        )}
 
         <div className="mt-1 flex gap-2">
           <input
@@ -170,7 +207,7 @@ export function Home() {
       </motion.div>
 
       <div className="mt-auto pt-6 text-[11px] text-cream/35">
-        {conn === "open" ? "✓ forbundet til serveren" : "forbinder til serveren…"}
+        {conn !== "open" ? "forbinder til serveren…" : ""}
       </div>
 
       <InstallHint />

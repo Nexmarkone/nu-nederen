@@ -28,6 +28,10 @@ export function CardFace({ card }: { card: FaceCard }) {
   const color = card.rank === "JOKER" ? GOLD : suitColor(card);
   const glyph = card.suit ? SUIT_GLYPH[card.suit] : "";
   const gid = useId();
+  const isBlack = card.suit === "spades" || card.suit === "clubs";
+  // Power cards wear their ability: a 10 lets you KIG (peek), a J lets you BYT
+  // (swap) — when drawn from the pile and discarded.
+  const ability = card.rank === "10" ? "👁" : card.rank === "J" ? "🔀" : null;
 
   return (
     <svg viewBox="0 0 100 140" className="h-full w-full" aria-hidden>
@@ -99,35 +103,52 @@ export function CardFace({ card }: { card: FaceCard }) {
               {glyph}
             </text>
           </g>
+          {/* Ability badge — 10 = KIG (peek), J = BYT (swap). */}
+          {ability && (
+            <g>
+              <circle cx="50" cy="15" r="11" fill={color} opacity="0.12" />
+              <text x="50" y="20" textAnchor="middle" fontSize="14">
+                {ability}
+              </text>
+            </g>
+          )}
           {/* Center */}
           {card.rank === "A" ? (
             <text x="50" y="86" textAnchor="middle" fontSize="52">
               {glyph}
             </text>
-          ) : card.rank === "K" || card.rank === "Q" || card.rank === "J" ? (
+          ) : card.rank === "K" ? (
             <g>
-              {card.rank === "K" && (
-                <path
-                  d="M 36 47 L 41 38 L 47 45 L 50 35 L 53 45 L 59 38 L 64 47 Z"
-                  fill={GOLD}
-                  stroke={INK}
-                  strokeWidth="1.6"
-                  strokeLinejoin="round"
-                />
-              )}
-              <text x="50" y="92" textAnchor="middle" fontSize="46" fontWeight="800">
+              <path
+                d="M 36 47 L 41 38 L 47 45 L 50 35 L 53 45 L 59 38 L 64 47 Z"
+                fill={GOLD}
+                stroke={INK}
+                strokeWidth="1.6"
+                strokeLinejoin="round"
+              />
+              {/* A black king is a SUR (angry) king; a red king stays cool. */}
+              <text x="50" y="86" textAnchor="middle" fontSize="32">
+                {isBlack ? "😡" : "😎"}
+              </text>
+              <text x="50" y="118" textAnchor="middle" fontSize="18">
+                {glyph}
+              </text>
+            </g>
+          ) : card.rank === "Q" || card.rank === "J" ? (
+            <g>
+              <text x="50" y="94" textAnchor="middle" fontSize="44" fontWeight="800">
                 {card.rank}
               </text>
-              <text x="50" y="116" textAnchor="middle" fontSize="18">
+              <text x="50" y="118" textAnchor="middle" fontSize="18">
                 {glyph}
               </text>
             </g>
           ) : (
             <g>
-              <text x="50" y="86" textAnchor="middle" fontSize="44" fontWeight="800">
+              <text x="50" y="88" textAnchor="middle" fontSize="42" fontWeight="800">
                 {card.rank}
               </text>
-              <text x="50" y="114" textAnchor="middle" fontSize="20">
+              <text x="50" y="116" textAnchor="middle" fontSize="20">
                 {glyph}
               </text>
             </g>

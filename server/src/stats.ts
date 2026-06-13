@@ -15,6 +15,11 @@ import type { GameState, ToplisteEntry } from "@nu/shared";
 
 type Entries = Record<string, ToplisteEntry>;
 
+// Names used only for development/testing — never shown on, nor recorded to,
+// the public leaderboard. Keys are lowercased+trimmed, matching the entry keys.
+const RESERVED_TEST_NAMES = new Set(["testspiller", "test"]);
+const isReservedTestName = (key: string): boolean => RESERVED_TEST_NAMES.has(key);
+
 interface Backend {
   load(): Promise<Entries>;
   save(entries: Entries): Promise<void>;
@@ -206,6 +211,11 @@ export class StatsStore {
     this.ready = this.backend
       .load()
       .then((e) => {
+        // Purge any stray test entries so they vanish from memory and from the
+        // next save — the leaderboard self-cleans on the first boot after this.
+        for (const key of Object.keys(e)) {
+          if (isReservedTestName(key)) delete e[key];
+        }
         this.entries = e;
         this.loaded = true;
         this.loadOk = true;
@@ -241,7 +251,7 @@ export class StatsStore {
     for (const p of state.players) {
       if (p.isBot) continue;
       const key = p.name.trim().toLowerCase();
-      if (!key) continue;
+      if (!key || isReservedTestName(key)) continue;
       const e = (this.entries[key] ??= {
         name: p.name.trim(),
         avatar: p.avatar,

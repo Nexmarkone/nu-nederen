@@ -98,11 +98,27 @@ export function Game() {
   const abilityTargeting = myTurn && game.turnStage === "ability" && game.pendingAbility !== null;
 
   // Opponent cards share the top row — bigger when fewer opponents, so they
-  // stay easy to see and tap (the tiny w-6 grid was hard to hit). Always fits
-  // the row, even with 5 opponents at the table.
+  // stay easy to see and tap (the tiny w-6 grid was hard to hit).
   const oppCount = opponents.length;
+  // Penalty cards can push a grid to 5–6 cards (3 rows). When anyone's grid
+  // grows past 4, every grid shrinks a notch so the whole table still fits.
+  const maxGridLen = Math.max(4, ...game.players.map((p) => p.grid.length));
+  const bigGrids = maxGridLen >= 5;
   const oppCardClass =
-    oppCount <= 2 ? "w-14" : oppCount === 3 ? "w-11" : oppCount === 4 ? "w-9" : "w-7";
+    oppCount <= 2
+      ? bigGrids
+        ? "w-10"
+        : "w-14"
+      : oppCount === 3
+        ? bigGrids
+          ? "w-8"
+          : "w-11"
+        : oppCount === 4
+          ? bigGrids
+            ? "w-7"
+            : "w-9"
+          : "w-7";
+  const ownCardClass = maxGridLen >= 6 ? "w-[54px]" : maxGridLen === 5 ? "w-16" : "w-[74px]";
 
   const onCardTap = (ref: GridRef) => {
     const mine = ref.playerId === playerId;
@@ -365,7 +381,7 @@ export function Game() {
           {!threeD && (
             <CardGrid
               player={me}
-              cardClass="w-[74px]"
+              cardClass={ownCardClass}
               onCardTap={onCardTap}
               targetable={abilityTargeting || (swapSelecting && myTurn)}
               jumpable={!!windowOpen}

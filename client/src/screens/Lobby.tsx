@@ -14,7 +14,7 @@ import { ChatPanel } from "../components/ChatPanel";
 const DIFF_LABEL: Record<BotDifficulty, string> = {
   easy: "🟢 Let",
   medium: "🟡 Mellem",
-  hard: "🔴 MPC",
+  hard: "🧠 Ekstrem",
 };
 
 function RuleSelect<T extends string | number | boolean>({

@@ -98,7 +98,7 @@ export function WalkieTalkie() {
   return (
     <>
       <motion.button
-        className={`glass fixed bottom-[calc(env(safe-area-inset-bottom)+162px)] right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full shadow-xl ${
+        className={`glass fixed bottom-[calc(env(safe-area-inset-bottom)+162px)] right-4 z-30 flex h-16 w-16 items-center justify-center rounded-full shadow-xl ${
           active ? "bg-signal-red/90" : ""
         } ${active ? "pulse-gold" : ""}`}
         onPointerDown={(e) => {

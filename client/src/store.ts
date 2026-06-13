@@ -123,7 +123,7 @@ export interface StoreState {
   toggleThreeD(): void;
   goto(screen: Screen): void;
   setJoinCodeInput(code: string): void;
-  createRoom(solo: boolean): void;
+  createRoom(solo: boolean, difficulty?: BotDifficulty): void;
   joinRoom(code: string): void;
   leaveRoom(): void;
   addBot(difficulty: BotDifficulty): void;
@@ -143,6 +143,7 @@ export interface StoreState {
 }
 
 let pendingSolo = false;
+let pendingSoloDifficulty: BotDifficulty = "hard";
 
 export const useStore = create<StoreState>((set, get) => ({
   conn: "connecting",
@@ -213,8 +214,9 @@ export const useStore = create<StoreState>((set, get) => ({
     set({ joinCodeInput: code.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4) });
   },
 
-  createRoom(solo) {
+  createRoom(solo, difficulty = "hard") {
     pendingSolo = solo;
+    pendingSoloDifficulty = difficulty;
     set({ joining: true });
     if (!socket.send({ type: "createRoom", name: get().name, avatar: get().avatar })) {
       set({ joining: false });
@@ -463,9 +465,11 @@ function handleMessage(msg: ServerMessage): void {
       if (pendingSolo) {
         pendingSolo = false;
         socket.send({ type: "updateRules", rules: { ...DEFAULT_RULES, turnTimerSeconds: 0 } });
-        socket.send({ type: "addBot", difficulty: "easy" });
-        socket.send({ type: "addBot", difficulty: "medium" });
-        socket.send({ type: "addBot", difficulty: "hard" });
+        // Three bots at the chosen level. "hard" = MPC brains that track the
+        // whole board, hunt jokers/red kings and jump in near-instantly.
+        socket.send({ type: "addBot", difficulty: pendingSoloDifficulty });
+        socket.send({ type: "addBot", difficulty: pendingSoloDifficulty });
+        socket.send({ type: "addBot", difficulty: pendingSoloDifficulty });
       }
       break;
     }
