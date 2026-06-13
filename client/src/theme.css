@@ -33,12 +33,14 @@ body {
   margin: 0;
   font-family: var(--font-display);
   color: var(--color-cream);
-  background-color: var(--color-felt-900);
+  background-color: #0e2a1c;
+  /* Brighter, more energetic felt — a lifted emerald centre, like a spotlit table */
   background-image: radial-gradient(
-    120% 90% at 50% 20%,
-    var(--color-felt-700) 0%,
-    var(--color-felt-800) 45%,
-    var(--color-felt-900) 100%
+    135% 105% at 50% 16%,
+    #2f7a52 0%,
+    #1f5639 34%,
+    #123a26 64%,
+    #0a2417 100%
   );
   background-attachment: fixed;
   /* iPhone: no rubber-banding mid-game, no tap highlight, no double-tap zoom */

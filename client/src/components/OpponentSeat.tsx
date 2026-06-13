@@ -13,6 +13,7 @@ export function OpponentSeat({
   onCardTap,
   targetable,
   selectedRef,
+  hideCards,
 }: {
   player: RedactedPlayer;
   isCurrent: boolean;
@@ -21,6 +22,8 @@ export function OpponentSeat({
   onCardTap?: (ref: GridRef) => void;
   targetable?: boolean;
   selectedRef?: GridRef | null;
+  /** When the 3D table renders the cards, omit the HTML mini-grid here. */
+  hideCards?: boolean;
 }) {
   return (
     <div
@@ -72,13 +75,15 @@ export function OpponentSeat({
       <div className="gold-bloom text-[11px] font-extrabold leading-none text-gold-bright tabular-nums">
         {player.totalScore}
       </div>
-      <CardGrid
-        player={player}
-        cardClass="w-6"
-        onCardTap={onCardTap}
-        targetable={targetable}
-        selectedRef={selectedRef}
-      />
+      {!hideCards && (
+        <CardGrid
+          player={player}
+          cardClass="w-6"
+          onCardTap={onCardTap}
+          targetable={targetable}
+          selectedRef={selectedRef}
+        />
+      )}
     </div>
   );
 }

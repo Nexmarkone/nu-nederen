@@ -156,12 +156,12 @@ export function Game() {
     return `${current.avatar} ${current.name} ${game.turnStage === "window" ? "— jump-vindue!" : "tænker…"}`;
   })();
 
-  // Own cards for the 3D table: face shown only when revealed or privately peeked.
-  const ownPeekFace = (i: number) => {
+  // Face shown only when revealed for everyone or privately peeked by me.
+  const peekFace = (pid: string, i: number) => {
     for (const p of peeks) {
       for (const c of p.cards) {
-        if (c.gridRef && c.gridRef.playerId === playerId && c.gridRef.gridIndex === i) {
-          return { rank: c.card.rank, suit: c.card.suit };
+        if (c.gridRef && c.gridRef.playerId === pid && c.gridRef.gridIndex === i) {
+          return { rank: c.card.rank, suit: c.card.suit ?? null };
         }
       }
     }
@@ -170,11 +170,28 @@ export function Game() {
   const ownSlots = me
     ? me.grid.map((c, i) => {
         if (!c) return null;
-        const face = c.faceUp && c.rank ? { rank: c.rank, suit: c.suit ?? null } : ownPeekFace(i);
+        const face =
+          c.faceUp && c.rank ? { rank: c.rank, suit: c.suit ?? null } : peekFace(playerId, i);
         return { id: c.id, face };
       })
     : [];
   const ownTappable = !!(abilityTargeting || (swapSelecting && myTurn) || windowOpen);
+
+  // Opponents for the 3D table, clockwise from the local player.
+  const opponentSeats = opponents.map((p) => ({
+    id: p.id,
+    name: p.name,
+    avatar: p.avatar,
+    isCurrent: game.phase === "playing" && current.id === p.id,
+    isDealer: game.players[game.dealerIndex]?.id === p.id,
+    isCaller: game.baguette.callerId === p.id,
+    slots: p.grid.map((c, i) => {
+      if (!c) return null;
+      const face =
+        c.faceUp && c.rank ? { rank: c.rank, suit: c.suit ?? null } : peekFace(p.id, i);
+      return { id: c.id, face };
+    }),
+  }));
 
   return (
     <motion.div
@@ -246,9 +263,10 @@ export function Game() {
             isCurrent={game.phase === "playing" && current.id === p.id}
             isDealer={game.players[game.dealerIndex]?.id === p.id}
             isCaller={game.baguette.callerId === p.id}
-            onCardTap={abilityTargeting ? onCardTap : undefined}
-            targetable={abilityTargeting}
+            onCardTap={abilityTargeting && !threeD ? onCardTap : undefined}
+            targetable={abilityTargeting && !threeD}
             selectedRef={abilityFirstPick}
+            hideCards={threeD}
           />
         ))}
       </div>
@@ -273,6 +291,9 @@ export function Game() {
               ownTappable={ownTappable}
               ownHighlight={ownTappable}
               onOwnTap={(i) => onCardTap({ playerId: playerId, gridIndex: i })}
+              opponents={opponentSeats}
+              opponentsTappable={abilityTargeting}
+              onOpponentTap={(pid, i) => onCardTap({ playerId: pid, gridIndex: i })}
             />
           </Suspense>
           {windowOpen && (
