@@ -4,6 +4,7 @@
 import { motion } from "motion/react";
 import type { RedactedGameState } from "@nu/shared";
 import { useStore } from "../store";
+import { CoinShower } from "./CoinShower";
 import { Confetti } from "./Confetti";
 import { ScoreBoard } from "./ScoreBoard";
 
@@ -34,8 +35,30 @@ export function GameOverOverlay({ game }: { game: RedactedGameState }) {
       animate={{ opacity: 1 }}
     >
       {iWon && <Confetti />}
+      {iWon && <CoinShower />}
 
       <div className="flex flex-col items-center gap-1.5">
+        {iWon && (
+          <motion.div
+            className="relative z-[41] mb-1"
+            initial={{ scale: 0.2, opacity: 0, y: -20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 260, damping: 13, delay: 0.15 }}
+          >
+            <div
+              className="font-display text-5xl font-black tracking-tight text-gold-bright"
+              style={{
+                WebkitTextStroke: "2px #7a521a",
+                textShadow: "0 4px 0 rgba(122,82,26,0.5), 0 0 26px rgba(232,197,122,0.7)",
+              }}
+            >
+              BIG WIN!
+            </div>
+            <div className="mx-auto mt-1 w-fit rounded-full bg-gradient-to-b from-bonus-green to-emerald-700 px-5 py-1 font-display text-2xl font-black text-cream shadow-lg ring-2 ring-emerald-300/40">
+              {game.players.find((p) => p.id === playerId)?.totalScore ?? 0} pt
+            </div>
+          </motion.div>
+        )}
         <div className="relative flex items-center justify-center">
           {iWon &&
             [0, 0.25, 0.5].map((d) => (
