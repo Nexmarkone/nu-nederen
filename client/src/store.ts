@@ -152,8 +152,9 @@ export const useStore = create<StoreState>((set, get) => ({
   avatar: localStorage.getItem(LS.avatar) ?? "🦊",
   muted: localStorage.getItem(LS.muted) === "1",
   music: false,
-  // 3D table on by default; toggle persists. Set "0" to disable.
-  threeD: localStorage.getItem(LS.threeD) !== "0",
+  // Always start in 2D — the 3D table isn't finished yet. The in-game 3D
+  // toggle still works for the current session, but every load begins in 2D.
+  threeD: false,
   playerId: null,
   roomCode: null,
   token: null,

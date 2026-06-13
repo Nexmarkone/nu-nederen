@@ -192,7 +192,8 @@ export function Game() {
         threeD ? "max-w-3xl" : "max-w-md"
       }`}
     >
-      <AmbientGlow active={game.phase === "playing" && (windowOpen || myTurn)} vibrant={threeD} />
+      {/* Energy glow only in 3D — 2D stays clean and classic, no circle. */}
+      {threeD && <AmbientGlow active={game.phase === "playing" && (windowOpen || myTurn)} vibrant />}
 
       {/* Big player frames seated around the 3D table (UNO-style portraits) */}
       {threeD && (

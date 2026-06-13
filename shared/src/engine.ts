@@ -519,8 +519,10 @@ export function applyAction(prev: GameState, action: EngineAction, rng: Rng): En
           p.grid[empty] = penaltyCard;
           penaltyGridIndex = empty;
         } else {
-          p.grid.push(penaltyCard);
-          penaltyGridIndex = p.grid.length - 1;
+          // House rule: a penalty card lands on TOP of the grid, not at the
+          // bottom — a fitting punishment that also shifts what you memorised.
+          p.grid.unshift(penaltyCard);
+          penaltyGridIndex = 0;
         }
       }
       events.push({
@@ -552,6 +554,12 @@ export function applyAction(prev: GameState, action: EngineAction, rng: Rng): En
       state.baguette = { callerId: p.id, remaining };
       p.stats.baguettes += 1;
       events.push({ type: "baguetteCalled", playerId: p.id });
+      // House rule: calling Baguette is your final act of the turn — forgo any
+      // pending ability and (re)open a fresh jump-in window so everyone gets a
+      // full ~5s to react and jump in before the last lap begins.
+      state.pendingAbility = null;
+      state.turnStage = "window";
+      openJumpWindow(state, events);
       return { state, events };
     }
 

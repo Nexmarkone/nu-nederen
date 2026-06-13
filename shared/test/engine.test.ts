@@ -266,12 +266,15 @@ describe("jump-in", () => {
     const before = state.drawPile.length;
     const res = ok(state, { type: "jumpIn", playerId: p2.id, gridIndex: 1, windowId }, rng); // a 9, top is 7
     const after = res.state.players[1]!;
-    expect(after.grid[1]!.rank).toBe("9"); // stays
-    expect(after.grid).toHaveLength(5); // penalty card appended
+    expect(after.grid).toHaveLength(5); // penalty card added on top
+    expect(after.grid[2]!.rank).toBe("9"); // the returned 9 shifted down by one
     expect(after.stats.failedJumpIns).toBe(1);
     expect(res.state.drawPile).toHaveLength(before - 1);
     const ev = res.events.find((e) => e.type === "jumpInFailed")!;
-    expect("penaltyGridIndex" in ev && ev.penaltyGridIndex).toBe(4);
+    expect("penaltyGridIndex" in ev && ev.penaltyGridIndex).toBe(0); // lands on top
+    if (ev.type === "jumpInFailed") {
+      expect(after.grid[0]!.id).toBe(ev.penaltyCardId); // top slot is the penalty
+    }
     // Window unaffected by a failed jump.
     expect(res.state.jumpWindow.id).toBe(windowId);
     expect(res.state.jumpWindow.open).toBe(true);
