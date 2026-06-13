@@ -544,6 +544,7 @@ export interface Seat3D {
   isCurrent: boolean;
   isDealer: boolean;
   isCaller: boolean;
+  score: number;
 }
 
 export interface Table3DProps {
@@ -815,45 +816,92 @@ function SeatCards({
 
 /* ------------------------------------------------------- opponent name plate */
 
+/** A premium round player portrait (avatar in a gold ring) + name + score. */
 function nameTexture(seat: Seat3D): THREE.CanvasTexture {
-  const key = `np-${seat.id}-${seat.name}-${seat.avatar}-${seat.isCurrent ? 1 : 0}-${
+  const key = `np2-${seat.id}-${seat.name}-${seat.avatar}-${seat.isCurrent ? 1 : 0}-${
     seat.isCaller ? 1 : 0
-  }-${seat.isDealer ? 1 : 0}`;
+  }-${seat.isDealer ? 1 : 0}-${seat.score}`;
   const cached = texCache.get(key);
   if (cached) return cached;
   const W = 256;
-  const H = 96;
+  const H = 256;
   const [c, ctx] = makeCanvas(W, H);
-  roundRect(ctx, 6, 18, W - 12, 60, 30);
-  ctx.fillStyle = seat.isCurrent ? "rgba(232,197,122,0.94)" : "rgba(11,31,22,0.82)";
+  const cx = W / 2;
+  const cy = 96;
+  const r = 64;
+
+  // active-turn halo
+  if (seat.isCurrent) {
+    const halo = ctx.createRadialGradient(cx, cy, r, cx, cy, r + 26);
+    halo.addColorStop(0, "rgba(232,197,122,0.55)");
+    halo.addColorStop(1, "rgba(232,197,122,0)");
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 26, 0, Math.PI * 2);
+    ctx.fillStyle = halo;
+    ctx.fill();
+  }
+
+  // portrait disc
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  const disc = ctx.createRadialGradient(cx, cy - 22, 10, cx, cy, r);
+  disc.addColorStop(0, "#23613f");
+  disc.addColorStop(1, "#0b1f16");
+  ctx.fillStyle = disc;
   ctx.fill();
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = seat.isCurrent ? "#fff" : "rgba(232,197,122,0.5)";
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = seat.isCurrent ? GOLD_BRIGHT : GOLD;
   ctx.stroke();
-  ctx.textAlign = "left";
+
+  // avatar emoji
+  ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = "44px Arial, sans-serif";
-  ctx.fillText(seat.avatar, 22, 50);
-  ctx.fillStyle = seat.isCurrent ? INK : CREAM;
-  ctx.font = "700 30px Outfit, Arial, sans-serif";
-  const name = seat.name.length > 9 ? seat.name.slice(0, 8) + "…" : seat.name;
-  ctx.fillText(name, 76, 50);
+  ctx.font = "80px Arial, sans-serif";
+  ctx.fillText(seat.avatar, cx, cy + 6);
+
+  // dealer / caller chips on the ring
+  const chip = (text: string, ax: number, bg: string, fg: string) => {
+    ctx.beginPath();
+    ctx.arc(ax, cy + 44, 20, 0, Math.PI * 2);
+    ctx.fillStyle = bg;
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "rgba(11,31,22,0.7)";
+    ctx.stroke();
+    ctx.fillStyle = fg;
+    ctx.font = "700 22px Outfit, Arial, sans-serif";
+    ctx.fillText(text, ax, cy + 45);
+  };
+  if (seat.isDealer) chip("D", cx + 46, "#F5EFDC", INK);
   if (seat.isCaller) {
     ctx.font = "30px Arial, sans-serif";
-    ctx.fillText("🥖", W - 44, 50);
-  } else if (seat.isDealer) {
-    ctx.fillStyle = seat.isCurrent ? INK : GOLD_BRIGHT;
-    ctx.font = "700 20px Outfit, Arial, sans-serif";
-    ctx.fillText("D", W - 32, 50);
+    ctx.fillText("🥖", cx - 50, cy + 46);
   }
+
+  // name + score plate
+  roundRect(ctx, 24, 178, W - 48, 64, 32);
+  ctx.fillStyle = "rgba(8,26,18,0.88)";
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "rgba(232,197,122,0.45)";
+  ctx.stroke();
+  ctx.fillStyle = CREAM;
+  ctx.font = "700 30px Outfit, Arial, sans-serif";
+  const name = seat.name.length > 10 ? seat.name.slice(0, 9) + "…" : seat.name;
+  ctx.fillText(name, cx, 200);
+  ctx.fillStyle = GOLD_BRIGHT;
+  ctx.font = "800 26px Outfit, Arial, sans-serif";
+  ctx.fillText(`${seat.score} pt`, cx, 226);
+
   texCache.set(key, finalize(c));
   return texCache.get(key)!;
 }
 
 function NamePlate({ seat, position }: { seat: Seat3D; position: Vec3 }) {
   const tex = nameTexture(seat);
+  // Square portrait badge, raised so it sits above the seat's cards.
   return (
-    <sprite position={position} scale={[1.0, 0.375, 1]}>
+    <sprite position={[position[0], position[1] + 0.5, position[2]]} scale={[1.5, 1.5, 1]}>
       <spriteMaterial map={tex} transparent depthWrite={false} />
     </sprite>
   );

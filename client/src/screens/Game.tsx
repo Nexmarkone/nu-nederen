@@ -182,6 +182,7 @@ export function Game() {
     id: p.id,
     name: p.name,
     avatar: p.avatar,
+    score: p.totalScore,
     isCurrent: game.phase === "playing" && current.id === p.id,
     isDealer: game.players[game.dealerIndex]?.id === p.id,
     isCaller: game.baguette.callerId === p.id,
@@ -256,22 +257,23 @@ export function Game() {
         </div>
       </header>
 
-      {/* Opponents */}
-      <div className="z-10 mt-1 flex items-start justify-center gap-1">
-        {opponents.map((p) => (
-          <OpponentSeat
-            key={p.id}
-            player={p}
-            isCurrent={game.phase === "playing" && current.id === p.id}
-            isDealer={game.players[game.dealerIndex]?.id === p.id}
-            isCaller={game.baguette.callerId === p.id}
-            onCardTap={abilityTargeting && !threeD ? onCardTap : undefined}
-            targetable={abilityTargeting && !threeD}
-            selectedRef={abilityFirstPick}
-            hideCards={threeD}
-          />
-        ))}
-      </div>
+      {/* Opponents — HTML row only in 2D; in 3D the avatars sit at the table. */}
+      {!threeD && (
+        <div className="z-10 mt-1 flex items-start justify-center gap-1">
+          {opponents.map((p) => (
+            <OpponentSeat
+              key={p.id}
+              player={p}
+              isCurrent={game.phase === "playing" && current.id === p.id}
+              isDealer={game.players[game.dealerIndex]?.id === p.id}
+              isCaller={game.baguette.callerId === p.id}
+              onCardTap={abilityTargeting ? onCardTap : undefined}
+              targetable={abilityTargeting}
+              selectedRef={abilityFirstPick}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Piles — real 3D table when enabled, otherwise the CSS-3D version */}
       {threeD ? (
