@@ -280,6 +280,20 @@ describe("jump-in", () => {
     expect(res.state.jumpWindow.open).toBe(true);
   });
 
+  it("a penalty lands on TOP even when a lower slot is empty (never fills the bottom gap)", () => {
+    const { state, rng, windowId } = windowOpenGame();
+    const p2 = state.players[1]!;
+    p2.grid[3] = null; // p2 had jumped a bottom card away earlier — empty bottom slot
+    const res = ok(state, { type: "jumpIn", playerId: p2.id, gridIndex: 1, windowId }, rng); // a 9, top is 7 -> wrong
+    const after = res.state.players[1]!;
+    const ev = res.events.find((e) => e.type === "jumpInFailed")!;
+    expect("penaltyGridIndex" in ev && ev.penaltyGridIndex).toBe(0); // TOP, not the empty bottom slot
+    if (ev.type === "jumpInFailed") {
+      expect(after.grid[0]!.id).toBe(ev.penaltyCardId);
+    }
+    expect(after.grid.at(-1)).toBeNull(); // the empty bottom slot is left untouched
+  });
+
   it("supports the points5 penalty house rule", () => {
     const { state, rng } = newPlayingGame(3, { jumpInPenalty: "points5" });
     const p2 = state.players[1]!;
@@ -356,6 +370,19 @@ describe("jump-in", () => {
 });
 
 describe("baguette", () => {
+  it("opens a jump window with 5 EXTRA seconds so everyone can react", () => {
+    const { state, rng } = newPlayingGame(3);
+    const caller = currentId(state);
+    let res = ok(state, { type: "draw", playerId: caller }, rng);
+    res = ok(res.state, { type: "discardDrawn", playerId: caller, useAbility: false }, rng);
+    res = ok(res.state, { type: "baguette", playerId: caller }, rng);
+    const ev = res.events.find((e) => e.type === "jumpWindowOpened")!;
+    // default jumpInWindowSeconds (5s) + 5s extra on baguette = 10s
+    expect("durationMs" in ev && ev.durationMs).toBe(10000);
+    expect(res.state.jumpWindow.open).toBe(true);
+    expect(res.state.turnStage).toBe("window");
+  });
+
   it("gives everyone else exactly one extra turn, then reveals (caller last)", () => {
     const { state, rng } = newPlayingGame(3);
     const caller = currentId(state);
