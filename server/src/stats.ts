@@ -15,19 +15,47 @@ import type { GameState, ToplisteEntry } from "@nu/shared";
 
 type Entries = Record<string, ToplisteEntry>;
 
-// Names hidden from the public leaderboard: dev/test accounts plus any the host
-// has asked us to remove (e.g. a duplicate left behind after someone renamed).
-// Keys are lowercased+trimmed, matching the entry keys. More can be added at any
-// time via the STATS_HIDDEN_NAMES env var (comma-separated) — no code change.
+// Names hidden from the public leaderboard: dev/test accounts the host asked us
+// to drop. Keys are lowercased+trimmed, matching the entry keys. More can be
+// added any time via the STATS_HIDDEN_NAMES env var (comma-separated).
 const HIDDEN_NAMES = new Set(
   [
     "testspiller",
     "test",
-    "jennifer pokorni", // omdøbt til "Fer"
     ...(process.env.STATS_HIDDEN_NAMES ?? "").split(",").map((s) => s.trim().toLowerCase()),
   ].filter(Boolean),
 );
 const isHiddenName = (key: string): boolean => HIDDEN_NAMES.has(key);
+
+// One-time history merges: an old name-keyed row folded into a canonical one
+// (e.g. someone who renamed before stable client-ids existed). Applied once on
+// load; harmless afterwards since the source row is then gone. from -> into.
+const STAT_ALIASES: Record<string, string> = {
+  "jennifer pokorni": "fer", // omdøbt til "Fer"
+};
+
+/** Fold any alias source rows into their target. Returns true if anything moved. */
+function foldAliases(entries: Entries): boolean {
+  let changed = false;
+  for (const [from, into] of Object.entries(STAT_ALIASES)) {
+    const src = entries[from];
+    if (!src) continue;
+    const dst = entries[into];
+    if (dst) {
+      dst.games += src.games;
+      dst.wins += src.wins;
+      dst.nederen += src.nederen;
+      dst.jumpIns += src.jumpIns;
+      dst.baguetteHits += src.baguetteHits;
+      dst.lastPlayed = Math.max(dst.lastPlayed, src.lastPlayed);
+    } else {
+      entries[into] = src; // target doesn't exist — just move the row over
+    }
+    delete entries[from];
+    changed = true;
+  }
+  return changed;
+}
 
 interface Backend {
   load(): Promise<Entries>;
@@ -220,10 +248,14 @@ export class StatsStore {
     this.ready = this.backend
       .load()
       .then((e) => {
-        // Purge any stray test entries so they vanish from memory and from the
-        // next save — the leaderboard self-cleans on the first boot after this.
+        // One-time history merges (renames) + purge of hidden test rows, then
+        // persist so the data branch self-cleans on the first boot after this.
+        let changed = foldAliases(e);
         for (const key of Object.keys(e)) {
-          if (isHiddenName(key)) delete e[key];
+          if (isHiddenName(key)) {
+            delete e[key];
+            changed = true;
+          }
         }
         this.entries = e;
         this.loaded = true;
@@ -231,6 +263,7 @@ export class StatsStore {
         console.log(
           `Topliste indlæst: ${Object.keys(e).length} spillere — backend: ${this.backend.label}`,
         );
+        if (changed) this.saveSoon();
       })
       .catch((err) => {
         this.loaded = true;
