@@ -292,13 +292,18 @@ function Felt() {
     <group>
       {/* table top */}
       <mesh position={[0, -0.03, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <circleGeometry args={[3.4, 64]} />
+        <circleGeometry args={[3.7, 72]} />
         <meshStandardMaterial map={tex} roughness={0.95} metalness={0} />
       </mesh>
-      {/* gold rim */}
-      <mesh position={[0, -0.04, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[3.18, 3.4, 64]} />
-        <meshStandardMaterial color={GOLD} roughness={0.5} metalness={0.4} />
+      {/* gold inlay ring */}
+      <mesh position={[0, -0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[3.5, 3.66, 72]} />
+        <meshStandardMaterial color={GOLD} roughness={0.4} metalness={0.55} />
+      </mesh>
+      {/* padded leather/brass rail around the table */}
+      <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow>
+        <torusGeometry args={[3.78, 0.2, 18, 80]} />
+        <meshStandardMaterial color="#4a3320" roughness={0.45} metalness={0.35} />
       </mesh>
     </group>
   );
@@ -359,15 +364,15 @@ export interface Table3DProps {
 
 export function Table3D({ drawCount, discardTop, canDraw, canTake, onDraw, onTake }: Table3DProps) {
   return (
-    <div className="table3d-host relative h-[340px] w-full">
+    <div className="table3d-host relative h-full min-h-[300px] w-full">
       <Canvas
         shadows
         frameloop="demand"
         dpr={[1, 2]}
-        camera={{ position: [0, 3.1, 4.0], fov: 34 }}
+        camera={{ position: [0, 2.55, 4.35], fov: 42 }}
         gl={{ antialias: true, alpha: true }}
         style={{ background: "transparent" }}
-        onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
+        onCreated={({ camera }) => camera.lookAt(0, -0.25, 0)}
       >
         <hemisphereLight args={["#cfe3d6", "#0a1c13", 0.7]} />
         <directionalLight
