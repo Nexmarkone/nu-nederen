@@ -198,7 +198,7 @@ export function Game() {
       animate={shakeControls}
       className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col px-3 pb-2 pt-[calc(env(safe-area-inset-top)+6px)]"
     >
-      <AmbientGlow active={game.phase === "playing" && (windowOpen || myTurn)} />
+      <AmbientGlow active={game.phase === "playing" && (windowOpen || myTurn)} vibrant={threeD} />
 
       {/* Header */}
       <header className="z-10 flex items-center justify-between gap-2 py-1">

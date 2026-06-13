@@ -4,8 +4,25 @@
 
 import { motion, useReducedMotion } from "motion/react";
 
-export function AmbientGlow({ active }: { active: boolean }) {
+export function AmbientGlow({ active, vibrant = true }: { active: boolean; vibrant?: boolean }) {
   const reduce = useReducedMotion();
+
+  // Classic mode (2D): just a calm, subtle radial glow — no star rays.
+  if (!vibrant) {
+    return (
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+        <motion.div
+          className="absolute left-1/2 top-1/2 h-[130vw] w-[130vw] -translate-x-1/2 -translate-y-1/2 rounded-full"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(232,197,122,0.10) 0%, rgba(62,142,90,0.07) 38%, rgba(11,31,22,0) 66%)",
+          }}
+          animate={reduce ? { opacity: 0.6 } : { opacity: [0.4, 0.6, 0.4], scale: [1, 1.05, 1] }}
+          transition={{ duration: 5, ease: "easeInOut", repeat: Infinity }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
