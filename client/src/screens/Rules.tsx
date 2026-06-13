@@ -105,8 +105,10 @@ export function Rules() {
           (hold knappen inde). Alle andre får <b>præcis én tur mere</b> — så vendes alle kort:
         </p>
         <ul className="list-inside list-disc space-y-1">
-          <li>Havde du (delt) lavest? <b>−3 bonus</b> 🎉</li>
-          <li>Ellers: <b>+5 straf</b> 😬</li>
+          <li>Havde du <b>alene</b> færrest point? <b>−3 bonus</b> 🎉</li>
+          <li>
+            Ellers (også hvis I <b>deler</b> lavest)? <b>+5 straf</b> 😬
+          </li>
         </ul>
       </Section>
 

@@ -8,19 +8,28 @@ export function gridSum(player: PlayerState): number {
 
 /**
  * Computes the full reveal for a round: raw sums, baguette adjustment
- * (-3 if the caller has the (shared) lowest raw sum, otherwise +5),
- * round scores and new totals. Does NOT mutate state.
+ * The caller gets -3 only if they are STRICTLY lowest (uniquely fewest points).
+ * If they merely tie for lowest, they do not have "fewest", so it is +5.
+ * Does NOT mutate state.
  */
 export function computeReveal(state: GameState): RevealData {
   const callerId = state.baguette.callerId;
   const raw = new Map<string, number>();
   for (const p of state.players) raw.set(p.id, gridSum(p));
 
-  const minRaw = Math.min(...raw.values());
+  // Caller earns the -3 bonus only when no other player ties or beats them.
+  let callerStrictlyLowest = false;
+  if (callerId !== null) {
+    const callerSum = raw.get(callerId)!;
+    const othersMin = Math.min(
+      ...state.players.filter((p) => p.id !== callerId).map((p) => raw.get(p.id)!),
+    );
+    callerStrictlyLowest = callerSum < othersMin;
+  }
 
   const entries: RevealEntry[] = state.players.map((p) => {
     const rawSum = raw.get(p.id)!;
-    const adjustment = p.id === callerId ? (rawSum <= minRaw ? -3 : 5) : 0;
+    const adjustment = p.id === callerId ? (callerStrictlyLowest ? -3 : 5) : 0;
     const roundScore = rawSum + adjustment;
     return {
       playerId: p.id,

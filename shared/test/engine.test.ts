@@ -397,8 +397,8 @@ describe("baguette", () => {
     fail(res2.state, { type: "baguette", playerId: second }, rng, "alreadyCalled");
   });
 
-  it("caller with the (shared) lowest sum gets -3, otherwise +5", () => {
-    // Case 1: caller lowest.
+  it("caller gets -3 only when STRICTLY lowest; a tie for lowest is +5", () => {
+    // Case 1: caller uniquely lowest.
     const { state, rng } = newPlayingGame(2);
     const caller = currentId(state);
     const callerP = state.players[state.currentPlayerIndex]!;
@@ -416,7 +416,7 @@ describe("baguette", () => {
     expect(callerEntry.adjustment).toBe(-3);
     expect(callerEntry.roundScore).toBe(callerEntry.rawSum - 3);
 
-    // Case 2: shared lowest also gets -3.
+    // Case 2: shared lowest (tie) -> +5, because the caller is not uniquely fewest.
     {
       const { state: st, rng: r } = newPlayingGame(2, {}, 7);
       const c = currentId(st);
@@ -432,7 +432,7 @@ describe("baguette", () => {
       const sFinal = playPlainTurn(rr.state, r);
       expect(sFinal.phase).toBe("reveal");
       const e = sFinal.reveal!.entries.find((x) => x.playerId === c)!;
-      expect(e.adjustment).toBe(-3);
+      expect(e.adjustment).toBe(5);
     }
 
     // Case 3: caller NOT lowest -> +5.
