@@ -1193,18 +1193,20 @@ export function Table3D(props: Table3DProps) {
     return window.innerWidth >= 360 && dpr <= 3;
   }, []);
 
-  // Pull the camera back a touch when many seats need to fit.
+  // Close, immersive framing so the cards are BIG and fill the screen.
   const seatCount = props.opponents.length;
-  const camZ = seatCount >= 4 ? 5.9 : 5.4;
-  const camY = seatCount >= 4 ? 4.1 : 3.9;
+  const camZ = seatCount >= 4 ? 4.5 : 4.1;
+  const camY = seatCount >= 4 ? 3.0 : 2.8;
 
   return (
-    <div className="table3d-host relative h-full min-h-[300px] w-full">
+    // Full-screen background: the table fills the whole viewport (UNO-style),
+    // with the HTML UI floating on top.
+    <div className="table3d-host fixed inset-0 z-[1]">
       <Canvas
         shadows
         frameloop="demand"
         dpr={[1, 2]}
-        camera={{ position: [0, camY, camZ], fov: 46 }}
+        camera={{ position: [0, camY, camZ], fov: 52 }}
         gl={{
           antialias: true,
           alpha: true,
@@ -1212,9 +1214,9 @@ export function Table3D(props: Table3DProps) {
         }}
         style={{ background: "transparent" }}
         onCreated={({ camera, gl }) => {
-          camera.lookAt(0, -0.1, 0.9);
+          camera.lookAt(0, -0.25, 0.7);
           gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.12;
+          gl.toneMappingExposure = 1.2;
         }}
       >
         <Scene {...props} reduced={reduced} allowBloom={allowBloom} />
