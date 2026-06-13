@@ -224,14 +224,17 @@ function ensureDrawPile(state: GameState, rng: Rng, events: GameEvent[]): boolea
   return state.drawPile.length > 0;
 }
 
-function openJumpWindow(state: GameState, events: GameEvent[]): void {
+function openJumpWindow(state: GameState, events: GameEvent[], extraMs = 0): void {
   state.jumpWindow = { id: state.jumpWindow.id + 1, open: true };
   events.push({
     type: "jumpWindowOpened",
     windowId: state.jumpWindow.id,
-    durationMs: state.rules.jumpInWindowSeconds * 1000,
+    durationMs: state.rules.jumpInWindowSeconds * 1000 + extraMs,
   });
 }
+
+/** Extra seconds added to the jump-in window when Baguette is called. */
+const BAGUETTE_EXTRA_MS = 5000;
 
 function startTurn(state: GameState, events: GameEvent[]): void {
   state.turnStage = "draw";
@@ -514,16 +517,11 @@ export function applyAction(prev: GameState, action: EngineAction, rng: Rng): En
       if (ensureDrawPile(state, rng, events)) {
         const penaltyCard = state.drawPile.pop()!;
         penaltyCardId = penaltyCard.id;
-        const empty = p.grid.findIndex((c) => c === null);
-        if (empty !== -1) {
-          p.grid[empty] = penaltyCard;
-          penaltyGridIndex = empty;
-        } else {
-          // House rule: a penalty card lands on TOP of the grid, not at the
-          // bottom — a fitting punishment that also shifts what you memorised.
-          p.grid.unshift(penaltyCard);
-          penaltyGridIndex = 0;
-        }
+        // House rule: a penalty card ALWAYS lands on TOP of the grid (index 0),
+        // never at the bottom — even when an empty slot exists lower down. It is
+        // a punishment, and it shifts what you had memorised.
+        p.grid.unshift(penaltyCard);
+        penaltyGridIndex = 0;
       }
       events.push({
         type: "jumpInFailed",
@@ -555,11 +553,12 @@ export function applyAction(prev: GameState, action: EngineAction, rng: Rng): En
       p.stats.baguettes += 1;
       events.push({ type: "baguetteCalled", playerId: p.id });
       // House rule: calling Baguette is your final act of the turn — forgo any
-      // pending ability and (re)open a fresh jump-in window so everyone gets a
-      // full ~5s to react and jump in before the last lap begins.
+      // pending ability and open a jump-in window with 5 EXTRA seconds on top of
+      // the normal window, so everyone has plenty of time to react and jump in
+      // before the last lap begins.
       state.pendingAbility = null;
       state.turnStage = "window";
-      openJumpWindow(state, events);
+      openJumpWindow(state, events, BAGUETTE_EXTRA_MS);
       return { state, events };
     }
 
