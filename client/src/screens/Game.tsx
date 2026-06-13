@@ -380,11 +380,26 @@ export function Game() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
+            {/* cinematic letterbox bars */}
             <motion.div
-              initial={{ scale: 0.3, rotate: -10 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 14 }}
-              className="font-display text-5xl font-black tracking-wide text-gold-bright drop-shadow-[0_0_24px_rgba(232,197,122,0.55)]"
+              className="absolute inset-x-0 top-0 h-[14vh] bg-black"
+              initial={{ y: "-100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "-100%" }}
+              transition={{ type: "spring", stiffness: 260, damping: 26 }}
+            />
+            <motion.div
+              className="absolute inset-x-0 bottom-0 h-[14vh] bg-black"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 260, damping: 26 }}
+            />
+            <motion.div
+              initial={{ scale: 2.6, opacity: 0, rotate: -8 }}
+              animate={{ scale: [2.6, 0.92, 1], opacity: 1, rotate: 0 }}
+              transition={{ duration: 0.55, times: [0, 0.7, 1], ease: "easeOut" }}
+              className="font-display text-6xl font-black tracking-wide text-gold-bright drop-shadow-[0_0_30px_rgba(232,197,122,0.7)]"
             >
               {banner.text}
             </motion.div>

@@ -164,8 +164,15 @@ function feltTexture(): THREE.CanvasTexture {
 const EDGE_COLOR = new THREE.Color("#EFE7CF");
 
 function cardMaterials(topTexture: THREE.Texture): THREE.Material[] {
-  const edge = new THREE.MeshStandardMaterial({ color: EDGE_COLOR, roughness: 0.55, metalness: 0.05 });
-  const top = new THREE.MeshStandardMaterial({ map: topTexture, roughness: 0.34, metalness: 0.04 });
+  const edge = new THREE.MeshStandardMaterial({ color: EDGE_COLOR, roughness: 0.5, metalness: 0.05 });
+  // Physical material with clearcoat = a laminated, glossy playing-card sheen.
+  const top = new THREE.MeshPhysicalMaterial({
+    map: topTexture,
+    roughness: 0.42,
+    metalness: 0.0,
+    clearcoat: 0.9,
+    clearcoatRoughness: 0.26,
+  });
   const bottom = new THREE.MeshStandardMaterial({ color: EDGE_COLOR, roughness: 0.6 });
   // Box faces: [+X,-X,+Y,-Y,+Z,-Z]; flat card -> +Z(index4) faces up.
   return [edge, edge, edge, edge, top, bottom];
@@ -201,10 +208,15 @@ function DrawStack({ count, onDraw }: { count: number; onDraw?: () => void }) {
   const back = backTexture();
   const shown = Math.min(Math.max(count, 0), 9);
   const ref = useRef<THREE.Group>(null);
-  // gentle invite bob when it's your turn to draw
+  const invalidate = useThree((s) => s.invalidate);
+  // gentle invite bob when it's your turn to draw (self-sustains under demand)
   useFrame((state) => {
-    if (ref.current) {
-      ref.current.position.y = onDraw ? Math.sin(state.clock.elapsedTime * 2) * 0.04 + 0.04 : 0;
+    if (!ref.current) return;
+    if (onDraw) {
+      ref.current.position.y = Math.sin(state.clock.elapsedTime * 2) * 0.04 + 0.04;
+      invalidate();
+    } else if (ref.current.position.y !== 0) {
+      ref.current.position.y = 0;
     }
   });
   return (
@@ -236,6 +248,7 @@ function DiscardCard({ card, onTake }: { card: Card | null; onTake?: () => void 
   const prevId = useRef<string | null>(null);
   const anim = useRef(1);
   const tex = card ? faceTexture(card) : null;
+  const invalidate = useThree((s) => s.invalidate);
 
   useEffect(() => {
     if (card && card.id !== prevId.current) {
@@ -244,7 +257,7 @@ function DiscardCard({ card, onTake }: { card: Card | null; onTake?: () => void 
     }
   }, [card?.id]);
 
-  useFrame((state, delta) => {
+  useFrame((_state, delta) => {
     const g = ref.current;
     if (!g) return;
     if (anim.current < 1) {
@@ -252,9 +265,7 @@ function DiscardCard({ card, onTake }: { card: Card | null; onTake?: () => void 
       const e = easeOut(anim.current);
       g.position.set(0.95 - (1 - e) * 0.5, 0.09 + (1 - e) * 1.7, (1 - e) * 0.3);
       g.rotation.set(-Math.PI / 2, 0, 0.14 - (1 - e) * 1.3);
-    } else {
-      // settled — a barely-there float for life
-      g.position.y = 0.09 + Math.sin(state.clock.elapsedTime * 1.3) * 0.012;
+      invalidate(); // sustain the deal-in animation under demand
     }
   });
 
@@ -291,6 +302,18 @@ function Felt() {
       </mesh>
     </group>
   );
+}
+
+/** Kick a render when the visible state changes (demand mode). */
+function Invalidate({ deps }: { deps: unknown[] }) {
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    invalidate();
+    const id = setTimeout(invalidate, 90);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+  return null;
 }
 
 function Resizer() {
@@ -339,7 +362,7 @@ export function Table3D({ drawCount, discardTop, canDraw, canTake, onDraw, onTak
     <div className="table3d-host relative h-[340px] w-full">
       <Canvas
         shadows
-        frameloop="always"
+        frameloop="demand"
         dpr={[1, 2]}
         camera={{ position: [0, 3.1, 4.0], fov: 34 }}
         gl={{ antialias: true, alpha: true }}
@@ -367,6 +390,7 @@ export function Table3D({ drawCount, discardTop, canDraw, canTake, onDraw, onTak
         <Felt />
         <DrawStack count={drawCount} onDraw={canDraw ? onDraw : undefined} />
         <DiscardCard card={discardTop} onTake={canTake ? onTake : undefined} />
+        <Invalidate deps={[drawCount, discardTop?.id ?? "none", canDraw, canTake]} />
       </Canvas>
       <div className="pointer-events-none absolute inset-x-0 bottom-1 flex justify-between px-8 text-[11px] font-semibold text-cream/60">
         <span>{drawCount} kort</span>

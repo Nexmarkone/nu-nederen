@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useReducedMotion } from "motion/react";
 
-const COLORS = ["#E8C57A", "#D2A24C", "#F5EFDC", "#3E8E5A", "#B43A2E"];
+const COLORS = ["#E8C57A", "#D2A24C", "#F5EFDC", "#3E8E5A", "#B43A2E", "#FFFFFF", "#F2C94C"];
 
 interface Particle {
   x: number;
@@ -36,17 +36,24 @@ export function Confetti() {
     resize();
     window.addEventListener("resize", resize);
 
-    const particles: Particle[] = Array.from({ length: 130 }, () => ({
-      x: Math.random() * canvas.width,
-      y: -Math.random() * canvas.height * 0.6,
-      vx: (Math.random() - 0.5) * 1.6 * dpr,
-      vy: (1.2 + Math.random() * 2.2) * dpr,
-      rot: Math.random() * Math.PI,
-      vrot: (Math.random() - 0.5) * 0.18,
-      w: (5 + Math.random() * 6) * dpr,
-      h: (8 + Math.random() * 8) * dpr,
-      color: COLORS[Math.floor(Math.random() * COLORS.length)]!,
-    }));
+    // Burst from the top corners like a party popper, plus a falling rain.
+    const particles: Particle[] = Array.from({ length: 240 }, (_, i) => {
+      const popper = i < 90;
+      const fromLeft = i % 2 === 0;
+      return {
+        x: popper ? (fromLeft ? 0 : canvas.width) : Math.random() * canvas.width,
+        y: popper ? canvas.height * 0.12 : -Math.random() * canvas.height * 0.6,
+        vx: popper
+          ? (fromLeft ? 1 : -1) * (3 + Math.random() * 5) * dpr
+          : (Math.random() - 0.5) * 1.8 * dpr,
+        vy: popper ? -(2 + Math.random() * 4) * dpr : (1.2 + Math.random() * 2.4) * dpr,
+        rot: Math.random() * Math.PI,
+        vrot: (Math.random() - 0.5) * 0.22,
+        w: (5 + Math.random() * 7) * dpr,
+        h: (8 + Math.random() * 9) * dpr,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)]!,
+      };
+    });
 
     let raf = 0;
     const step = () => {
@@ -54,10 +61,14 @@ export function Confetti() {
       for (const p of particles) {
         p.x += p.vx + Math.sin(p.y * 0.01) * 0.6 * dpr;
         p.y += p.vy;
+        p.vy += 0.06 * dpr; // gravity so popper bursts arc back down
+        p.vx *= 0.992; // air drag
         p.rot += p.vrot;
         if (p.y > canvas.height + 20) {
           p.y = -20;
           p.x = Math.random() * canvas.width;
+          p.vy = (1.2 + Math.random() * 2.4) * dpr;
+          p.vx = (Math.random() - 0.5) * 1.8 * dpr;
         }
         ctx.save();
         ctx.translate(p.x, p.y);

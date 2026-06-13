@@ -21,7 +21,7 @@ import {
   setMuted,
   sndBuzz,
   sndDeal,
-  sndFanfare,
+  sndJackpot,
   sndFlip,
   sndHorn,
   sndPling,
@@ -435,7 +435,7 @@ function handleEvent(ev: GameEvent): void {
       break;
 
     case "gameOver":
-      sndFanfare();
+      sndJackpot();
       break;
 
     case "seatChanged": {

@@ -4,8 +4,47 @@
 let ctx: AudioContext | null = null;
 let muted = false;
 
+// Master bus: a gentle limiter glues everything together, and a synthesized
+// convolution reverb gives the felt-room depth. Sounds route dry to the
+// master and (optionally) a little wet to the reverb send.
+let master: GainNode | null = null;
+let reverbSend: GainNode | null = null;
+
 export function setMuted(m: boolean): void {
   muted = m;
+}
+
+function makeImpulse(c: AudioContext, seconds: number, decay: number): AudioBuffer {
+  const len = Math.floor(c.sampleRate * seconds);
+  const buf = c.createBuffer(2, len, c.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++) {
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+    }
+  }
+  return buf;
+}
+
+function buildBus(c: AudioContext): void {
+  master = c.createGain();
+  master.gain.value = 0.85;
+  const comp = c.createDynamicsCompressor();
+  comp.threshold.value = -9;
+  comp.knee.value = 22;
+  comp.ratio.value = 6;
+  comp.attack.value = 0.003;
+  comp.release.value = 0.18;
+  master.connect(comp).connect(c.destination);
+
+  const reverb = c.createConvolver();
+  reverb.buffer = makeImpulse(c, 1.7, 2.4);
+  const reverbReturn = c.createGain();
+  reverbReturn.gain.value = 0.5;
+  reverb.connect(reverbReturn).connect(comp);
+  reverbSend = c.createGain();
+  reverbSend.gain.value = 1;
+  reverbSend.connect(reverb);
 }
 
 export function unlockAudio(): void {
@@ -15,13 +54,35 @@ export function unlockAudio(): void {
       (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AC) return;
     ctx = new AC();
+    buildBus(ctx);
   }
   if (ctx.state === "suspended") void ctx.resume();
 }
 
 function ac(): AudioContext | null {
-  if (muted || !ctx || ctx.state !== "running") return null;
+  if (muted || !ctx || ctx.state !== "running" || !master) return null;
   return ctx;
+}
+
+/**
+ * Returns the node a sound should connect to: a stereo-panned tap that feeds
+ * the dry master and a wet reverb send. pan: -1 (left) .. 1 (right).
+ */
+function dest(c: AudioContext, pan = 0, reverbAmt = 0.12): AudioNode {
+  const tap = c.createGain();
+  if (pan !== 0 && typeof c.createStereoPanner === "function") {
+    const p = c.createStereoPanner();
+    p.pan.value = Math.max(-1, Math.min(1, pan));
+    tap.connect(p).connect(master!);
+  } else {
+    tap.connect(master!);
+  }
+  if (reverbAmt > 0 && reverbSend) {
+    const send = c.createGain();
+    send.gain.value = reverbAmt;
+    tap.connect(send).connect(reverbSend);
+  }
+  return tap;
 }
 
 function tone(
@@ -32,6 +93,8 @@ function tone(
   dur: number,
   peak = 0.18,
   glideTo?: number,
+  pan = 0,
+  reverbAmt = 0.12,
 ): void {
   const osc = c.createOscillator();
   const gain = c.createGain();
@@ -41,7 +104,7 @@ function tone(
   gain.gain.setValueAtTime(0, t0);
   gain.gain.linearRampToValueAtTime(peak, t0 + 0.012);
   gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  osc.connect(gain).connect(c.destination);
+  osc.connect(gain).connect(dest(c, pan, reverbAmt));
   osc.start(t0);
   osc.stop(t0 + dur + 0.05);
 }
@@ -54,6 +117,8 @@ function noiseBurst(
   freq: number,
   peak = 0.25,
   sweepTo?: number,
+  pan = 0,
+  reverbAmt = 0.12,
 ): void {
   const len = Math.ceil(c.sampleRate * dur);
   const buf = c.createBuffer(1, len, c.sampleRate);
@@ -68,7 +133,7 @@ function noiseBurst(
   const gain = c.createGain();
   gain.gain.setValueAtTime(peak, t0);
   gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  src.connect(filter).connect(gain).connect(c.destination);
+  src.connect(filter).connect(gain).connect(dest(c, pan, reverbAmt));
   src.start(t0);
 }
 
@@ -79,11 +144,13 @@ export function sndTick(): void {
   noiseBurst(c, c.currentTime, 0.04, "highpass", 2500, 0.18);
 }
 
-/** Filtered noise sweep — a card flipping. */
-export function sndFlip(): void {
+/** Filtered noise sweep + a soft "thock" — a card landing. */
+export function sndFlip(pan = 0): void {
   const c = ac();
   if (!c) return;
-  noiseBurst(c, c.currentTime, 0.18, "bandpass", 500, 0.2, 3200);
+  const t = c.currentTime;
+  noiseBurst(c, t, 0.18, "bandpass", 500, 0.18, 3200, pan, 0.18);
+  tone(c, "sine", 240, t, 0.07, 0.1, 150, pan, 0.1); // body thock
 }
 
 /** Rising sine arpeggio — success. */
@@ -103,13 +170,14 @@ export function sndBuzz(): void {
   tone(c, "square", 170, c.currentTime, 0.28, 0.12, 75);
 }
 
-/** Heavy slam for jump-ins. */
-export function sndSlam(): void {
+/** Heavy slam for jump-ins — impact + sub boom + a little room. */
+export function sndSlam(pan = 0): void {
   const c = ac();
   if (!c) return;
   const t = c.currentTime;
-  noiseBurst(c, t, 0.12, "lowpass", 300, 0.5);
-  tone(c, "sine", 150, t, 0.22, 0.4, 55);
+  noiseBurst(c, t, 0.13, "lowpass", 320, 0.5, undefined, pan, 0.22);
+  tone(c, "sine", 150, t, 0.24, 0.42, 52, pan, 0.18);
+  tone(c, "triangle", 420, t, 0.06, 0.18, 220, pan, 0.1); // snap
 }
 
 /** Brass-ish baguette horn: three rising sawtooth notes. */
@@ -132,8 +200,30 @@ export function sndFanfare(): void {
   if (!c) return;
   const t = c.currentTime;
   const seq = [523.3, 659.3, 784, 1046.5];
-  seq.forEach((f, i) => tone(c, "triangle", f, t + i * 0.13, 0.18, 0.16));
-  for (const f of [523.3, 659.3, 784]) tone(c, "sawtooth", f, t + 0.55, 0.9, 0.07);
+  seq.forEach((f, i) => tone(c, "triangle", f, t + i * 0.13, 0.18, 0.16, undefined, 0, 0.18));
+  for (const f of [523.3, 659.3, 784]) tone(c, "sawtooth", f, t + 0.55, 0.9, 0.07, undefined, 0, 0.25);
+}
+
+/** Jackpot stinger — a big celebratory ascent + shimmer + sub for the winner. */
+export function sndJackpot(): void {
+  const c = ac();
+  if (!c) return;
+  const t = c.currentTime;
+  // sub boom
+  tone(c, "sine", 110, t, 0.5, 0.4, 55, 0, 0.2);
+  // triumphant rising arpeggio (C major pentatonic up two octaves)
+  const notes = [523.3, 587.3, 659.3, 784, 880, 1046.5, 1318.5, 1568];
+  notes.forEach((f, i) => {
+    tone(c, "triangle", f, t + i * 0.07, 0.4, 0.16, undefined, (i % 2 ? 0.4 : -0.4), 0.28);
+    tone(c, "sawtooth", f, t + i * 0.07, 0.18, 0.05);
+  });
+  // sparkle shimmer
+  for (let i = 0; i < 14; i++) {
+    const f = 1500 + Math.random() * 2600;
+    tone(c, "sine", f, t + 0.55 + Math.random() * 0.8, 0.18, 0.05, undefined, Math.random() * 2 - 1, 0.4);
+  }
+  // sustained brass chord to land on
+  for (const f of [523.3, 659.3, 784, 1046.5]) tone(c, "sawtooth", f, t + 0.62, 1.1, 0.08, undefined, 0, 0.3);
 }
 
 /** Dealing whoosh — a quick run of ticks as cards fly out. */
@@ -210,7 +300,7 @@ export function startMusic(): void {
   if (!musicGain) {
     musicGain = ctx.createGain();
     musicGain.gain.value = 0.7;
-    musicGain.connect(ctx.destination);
+    musicGain.connect(master ?? ctx.destination);
   }
   musicOn = true;
   nextNoteTime = ctx.currentTime + 0.15;

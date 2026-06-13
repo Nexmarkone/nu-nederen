@@ -36,14 +36,26 @@ export function GameOverOverlay({ game }: { game: RedactedGameState }) {
       {iWon && <Confetti />}
 
       <div className="flex flex-col items-center gap-1.5">
-        <motion.div
-          initial={{ scale: 0.6, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 240, damping: 18 }}
-          className="text-5xl"
-        >
-          {iWon ? "🏆" : iLost ? "🥖" : "🃏"}
-        </motion.div>
+        <div className="relative flex items-center justify-center">
+          {iWon &&
+            [0, 0.25, 0.5].map((d) => (
+              <motion.span
+                key={d}
+                className="absolute rounded-full border-2 border-gold-bright"
+                initial={{ width: 40, height: 40, opacity: 0.7 }}
+                animate={{ width: 260, height: 260, opacity: 0 }}
+                transition={{ duration: 1.1, delay: d, ease: "easeOut", repeat: Infinity, repeatDelay: 0.6 }}
+              />
+            ))}
+          <motion.div
+            initial={{ scale: 0, opacity: 0, rotate: -25 }}
+            animate={{ scale: 1, opacity: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 12, delay: 0.1 }}
+            className={`relative ${iWon ? "text-7xl drop-shadow-[0_0_24px_rgba(232,197,122,0.7)]" : "text-5xl"}`}
+          >
+            {iWon ? "🏆" : iLost ? "🥖" : "🃏"}
+          </motion.div>
+        </div>
         <h2 className="font-display text-3xl font-black text-gold-bright">
           {iWon ? "Du vandt!" : iLost ? "Du er Nederen!" : "Spillet er slut"}
         </h2>
