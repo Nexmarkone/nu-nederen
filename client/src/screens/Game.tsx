@@ -15,6 +15,7 @@ import { GameOverOverlay } from "../components/GameOverOverlay";
 import { OpponentSeat } from "../components/OpponentSeat";
 import { DiscardPile, DrawPile } from "../components/Piles";
 import { ReactionBar, ReactionOverlay } from "../components/Reactions";
+import { SeatFrames } from "../components/SeatFrames";
 
 // three.js is heavy — only load it when 3D mode is actually shown.
 const Table3D = lazy(() =>
@@ -177,23 +178,6 @@ export function Game() {
     : [];
   const ownTappable = !!(abilityTargeting || (swapSelecting && myTurn) || windowOpen);
 
-  // Opponents for the 3D table, clockwise from the local player.
-  const opponentSeats = opponents.map((p) => ({
-    id: p.id,
-    name: p.name,
-    avatar: p.avatar,
-    score: p.totalScore,
-    isCurrent: game.phase === "playing" && current.id === p.id,
-    isDealer: game.players[game.dealerIndex]?.id === p.id,
-    isCaller: game.baguette.callerId === p.id,
-    slots: p.grid.map((c, i) => {
-      if (!c) return null;
-      const face =
-        c.faceUp && c.rank ? { rank: c.rank, suit: c.suit ?? null } : peekFace(p.id, i);
-      return { id: c.id, face };
-    }),
-  }));
-
   return (
     <motion.div
       animate={shakeControls}
@@ -202,6 +186,20 @@ export function Game() {
       }`}
     >
       <AmbientGlow active={game.phase === "playing" && (windowOpen || myTurn)} vibrant={threeD} />
+
+      {/* Big player frames seated around the 3D table (UNO-style portraits) */}
+      {threeD && (
+        <SeatFrames
+          opponents={opponents}
+          me={null}
+          currentId={game.phase === "playing" ? current.id : null}
+          dealerId={game.players[game.dealerIndex]?.id ?? null}
+          callerId={game.baguette.callerId}
+          targeting={abilityTargeting}
+          selectedRef={abilityFirstPick}
+          onOpponentTap={onCardTap}
+        />
+      )}
 
       {/* Header */}
       <header className="z-10 flex items-center justify-between gap-2 py-1">
@@ -295,9 +293,9 @@ export function Game() {
               ownTappable={ownTappable}
               ownHighlight={ownTappable}
               onOwnTap={(i) => onCardTap({ playerId: playerId, gridIndex: i })}
-              opponents={opponentSeats}
-              opponentsTappable={abilityTargeting}
-              onOpponentTap={(pid, i) => onCardTap({ playerId: pid, gridIndex: i })}
+              opponents={[]}
+              opponentsTappable={false}
+              onOpponentTap={() => {}}
             />
           </Suspense>
           {windowOpen && (
@@ -369,28 +367,51 @@ export function Game() {
           <div className="flex items-center gap-2.5">
             <div className="relative">
               {game.phase === "playing" && current.id === playerId && (
-                <motion.div
-                  layoutId="turn-ring"
-                  className="absolute -inset-1 rounded-full border-[2.5px] border-gold-bright"
-                  transition={{ type: "spring", stiffness: 260, damping: 24 }}
-                />
+                <>
+                  <motion.div
+                    className="absolute -inset-1.5 rounded-full"
+                    style={{ background: "radial-gradient(circle, rgba(232,197,122,0.55), rgba(232,197,122,0) 70%)" }}
+                    animate={reduce ? { opacity: 0.7 } : { opacity: [0.5, 1, 0.5], scale: [1, 1.08, 1] }}
+                    transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                  <motion.div
+                    layoutId="turn-ring"
+                    className="absolute -inset-1 rounded-full border-2 border-gold-bright"
+                    style={{ borderStyle: "dashed" }}
+                    animate={reduce ? undefined : { rotate: 360 }}
+                    transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+                  />
+                </>
               )}
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-felt-700 text-lg">
+              <div
+                className={`relative flex items-center justify-center rounded-full bg-gradient-to-b from-felt-700 to-felt-900 ${
+                  threeD ? "h-[68px] w-[68px] text-4xl" : "h-11 w-11 text-2xl"
+                }`}
+                style={{
+                  boxShadow:
+                    "0 4px 14px rgba(0,0,0,0.55), inset 0 2px 2px rgba(255,255,255,0.14), 0 0 0 3px " +
+                    (game.phase === "playing" && current.id === playerId ? "#E8C57A" : "#D2A24C"),
+                }}
+              >
                 {me.avatar}
               </div>
               {game.baguette.callerId === me.id && (
-                <span className="absolute -left-2 -top-1 text-xs">🥖</span>
+                <span className="absolute -left-2 -top-1 text-base drop-shadow">🥖</span>
               )}
             </div>
-            <span className="text-sm font-bold">{me.name}</span>
-            <span className="gold-bloom rounded-full bg-felt-900/70 px-2.5 py-1 text-xs font-extrabold text-gold-bright tabular-nums">
-              {me.totalScore} pt
-            </span>
-            {game.players[game.dealerIndex]?.id === me.id && (
-              <span className="rounded-full bg-cream px-1.5 text-[10px] font-black text-ink">
-                DEALER
-              </span>
-            )}
+            <div className="flex flex-col items-start gap-0.5">
+              <span className="text-sm font-bold">{me.name}</span>
+              <div className="flex items-center gap-1.5">
+                <span className="gold-bloom rounded-full bg-felt-900/70 px-2.5 py-0.5 text-xs font-extrabold text-gold-bright tabular-nums">
+                  {me.totalScore} pt
+                </span>
+                {game.players[game.dealerIndex]?.id === me.id && (
+                  <span className="rounded-full bg-cream px-1.5 text-[10px] font-black text-ink">
+                    D
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
