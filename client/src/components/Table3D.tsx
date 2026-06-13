@@ -901,7 +901,7 @@ function NamePlate({ seat, position }: { seat: Seat3D; position: Vec3 }) {
   const tex = nameTexture(seat);
   // Square portrait badge, raised so it sits above the seat's cards.
   return (
-    <sprite position={[position[0], position[1] + 0.5, position[2]]} scale={[1.5, 1.5, 1]}>
+    <sprite position={[position[0], position[1] + 0.28, position[2] + 0.35]} scale={[1.35, 1.35, 1]}>
       <spriteMaterial map={tex} transparent depthWrite={false} />
     </sprite>
   );
@@ -1098,10 +1098,10 @@ function Scene(props: Table3DProps & { reduced: boolean; allowBloom: boolean }) 
   // own hand: two/three columns in the thumb zone in front of the camera
   const ownCols = ownSlots.length <= 4 ? 2 : 3;
   const ownLayout: SeatLayout = {
-    pos: [0, 0, 2.0],
+    pos: [0, 0, 1.65],
     yaw: 0,
-    scale: 0.84,
-    gap: ownCols === 2 ? 1.0 : 0.95,
+    scale: 0.82,
+    gap: ownCols === 2 ? 0.98 : 0.92,
   };
 
   const ownKey = ownSlots
@@ -1241,10 +1241,11 @@ export function Table3D(props: Table3DProps) {
     return window.innerWidth >= 360 && dpr <= 3;
   }, []);
 
-  // Close, immersive framing so the cards are BIG and fill the screen.
+  // Close, immersive framing so the cards are BIG and fill the screen — but
+  // pulled back/raised just enough that the back avatars and front cards both fit.
   const seatCount = props.opponents.length;
-  const camZ = seatCount >= 4 ? 4.2 : 3.8;
-  const camY = seatCount >= 4 ? 2.7 : 2.5;
+  const camZ = seatCount >= 4 ? 4.9 : 4.6;
+  const camY = seatCount >= 4 ? 3.35 : 3.15;
 
   return (
     // Fills its container; the container is made full-width in 3D mode.
@@ -1253,7 +1254,7 @@ export function Table3D(props: Table3DProps) {
         shadows
         frameloop="demand"
         dpr={[1, 2]}
-        camera={{ position: [0, camY, camZ], fov: 54 }}
+        camera={{ position: [0, camY, camZ], fov: 50 }}
         gl={{
           antialias: true,
           alpha: true,
@@ -1261,7 +1262,7 @@ export function Table3D(props: Table3DProps) {
         }}
         style={{ background: "transparent" }}
         onCreated={({ camera, gl }) => {
-          camera.lookAt(0, -0.25, 0.7);
+          camera.lookAt(0, -0.1, 0.35);
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1.2;
         }}
