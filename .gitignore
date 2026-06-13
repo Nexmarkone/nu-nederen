@@ -3,3 +3,7 @@ dist/
 *.local
 .DS_Store
 *.tsbuildinfo
+
+# Local leaderboard data (LocalFileBackend / dev + NUC). Prod uses the GitHub
+# data branch, so this runtime file should never be committed.
+data/
