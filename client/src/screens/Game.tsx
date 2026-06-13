@@ -392,21 +392,12 @@ export function Game() {
           <div className="flex items-center gap-2.5">
             <div className="relative">
               {game.phase === "playing" && current.id === playerId && (
-                <>
-                  <motion.div
-                    className="absolute -inset-1.5 rounded-full"
-                    style={{ background: "radial-gradient(circle, rgba(232,197,122,0.55), rgba(232,197,122,0) 70%)" }}
-                    animate={reduce ? { opacity: 0.7 } : { opacity: [0.5, 1, 0.5], scale: [1, 1.08, 1] }}
-                    transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                  <motion.div
-                    layoutId="turn-ring"
-                    className="absolute -inset-1 rounded-full border-2 border-gold-bright"
-                    style={{ borderStyle: "dashed" }}
-                    animate={reduce ? undefined : { rotate: 360 }}
-                    transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-                  />
-                </>
+                <motion.div
+                  className="pointer-events-none absolute -inset-1 rounded-full border-2 border-gold-bright"
+                  initial={{ opacity: 0, scale: 0.92 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.2 }}
+                />
               )}
               <div
                 className={`relative flex items-center justify-center rounded-full bg-gradient-to-b from-felt-700 to-felt-900 ${

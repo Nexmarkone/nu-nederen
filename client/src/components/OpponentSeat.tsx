@@ -36,21 +36,23 @@ export function OpponentSeat({
     >
       {isCurrent && (
         <motion.div
-          layoutId="turn-spotlight"
           className="pointer-events-none absolute -inset-1 -z-10 rounded-2xl"
           style={{
             background:
               "radial-gradient(circle at 50% 30%, rgba(232,197,122,0.28) 0%, rgba(232,197,122,0) 70%)",
           }}
-          transition={{ type: "spring", stiffness: 260, damping: 24 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
         />
       )}
       <div className="relative">
         {isCurrent && (
           <motion.div
-            layoutId="turn-ring"
             className="absolute -inset-1 rounded-full border-[2.5px] border-gold-bright"
-            transition={{ type: "spring", stiffness: 260, damping: 24 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
           />
         )}
         <div
