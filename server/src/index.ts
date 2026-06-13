@@ -49,7 +49,11 @@ app.get("/api/health", (c) =>
   }),
 );
 
-app.get("/api/topliste", (c) => c.json(statsStore.top(50)));
+app.get("/api/topliste", (c) => {
+  // Never let the browser cache the leaderboard — it must always be live.
+  c.header("Cache-Control", "no-store");
+  return c.json(statsStore.top(50));
+});
 
 app.get("*", async (c) => {
   let pathname = decodeURIComponent(new URL(c.req.url).pathname);
@@ -109,7 +113,7 @@ function handleMessage(ws: WebSocket, session: Session, msg: ClientMessage): voi
     case "createRoom": {
       leaveCurrent(ws, session);
       const room = manager.createRoom();
-      const seat = room.addHuman(msg.name, msg.avatar, ws);
+      const seat = room.addHuman(msg.name, msg.avatar, msg.clientId ?? null, ws);
       session.room = room;
       session.playerId = seat.id;
       send(ws, { type: "joined", playerId: seat.id, token: seat.token!, code: room.code });
@@ -134,7 +138,7 @@ function handleMessage(ws: WebSocket, session: Session, msg: ClientMessage): voi
           return;
         }
       }
-      const seat = room.addHuman(msg.name, msg.avatar, ws);
+      const seat = room.addHuman(msg.name, msg.avatar, msg.clientId ?? null, ws);
       session.room = room;
       session.playerId = seat.id;
       send(ws, { type: "joined", playerId: seat.id, token: seat.token!, code: room.code });

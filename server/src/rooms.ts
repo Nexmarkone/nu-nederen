@@ -41,6 +41,8 @@ interface Seat {
   id: string;
   name: string;
   avatar: string;
+  /** Stable anonymous per-device id (for leaderboard identity across renames). */
+  clientId: string | null;
   /** True for seats created as bots in the lobby (not takeover stand-ins). */
   isBot: boolean;
   botDifficulty: BotDifficulty | null;
@@ -91,7 +93,10 @@ export class Room {
   }
 
   onGameOver(state: GameState): void {
-    statsStore.record(state);
+    const clientIds = new Map<string, string | null>(
+      this.seats.map((s) => [s.id, s.clientId]),
+    );
+    statsStore.record(state, clientIds);
   }
 
   // --- Lobby ------------------------------------------------------------------
@@ -121,7 +126,7 @@ export class Room {
     this.sendAll({ type: "roomState", room: this.roomInfo() });
   }
 
-  addHuman(name: string, avatar: string, ws: WebSocket): Seat {
+  addHuman(name: string, avatar: string, clientId: string | null, ws: WebSocket): Seat {
     if (this.loop && this.loop.state.phase !== "gameOver") {
       throw new RoomError("gameInProgress", "Spillet er allerede i gang — bed om et nyt link.");
     }
@@ -132,6 +137,7 @@ export class Room {
       id: `p-${randomUUID().slice(0, 12)}`,
       name,
       avatar,
+      clientId,
       isBot: false,
       botDifficulty: null,
       token: randomUUID(),
@@ -189,6 +195,7 @@ export class Room {
       id: `bot-${randomUUID().slice(0, 8)}`,
       name,
       avatar: profile.avatar,
+      clientId: null,
       isBot: true,
       botDifficulty: difficulty,
       token: null,

@@ -70,7 +70,24 @@ const LS = {
   threeD: "nn:threed",
   session: "nn:session",
   hint: "nn:installHintSeen",
+  clientId: "nn:clientId",
 };
+
+/**
+ * A stable, anonymous per-device id. Lets the leaderboard keep a player's stats
+ * together across name changes (their score follows them, not the old name).
+ */
+function getClientId(): string {
+  let id = localStorage.getItem(LS.clientId);
+  if (!id) {
+    id =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `c-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    localStorage.setItem(LS.clientId, id);
+  }
+  return id;
+}
 
 function loadSession(): Session | null {
   try {
@@ -218,7 +235,14 @@ export const useStore = create<StoreState>((set, get) => ({
     pendingSolo = solo;
     pendingSoloDifficulty = difficulty;
     set({ joining: true });
-    if (!socket.send({ type: "createRoom", name: get().name, avatar: get().avatar })) {
+    if (
+      !socket.send({
+        type: "createRoom",
+        name: get().name,
+        avatar: get().avatar,
+        clientId: getClientId(),
+      })
+    ) {
       set({ joining: false });
       get().toast("Ingen forbindelse til serveren endnu — prøv igen.", "error");
     }
@@ -227,7 +251,13 @@ export const useStore = create<StoreState>((set, get) => ({
   joinRoom(code) {
     set({ joining: true });
     if (
-      !socket.send({ type: "joinRoom", code, name: get().name, avatar: get().avatar })
+      !socket.send({
+        type: "joinRoom",
+        code,
+        name: get().name,
+        avatar: get().avatar,
+        clientId: getClientId(),
+      })
     ) {
       set({ joining: false });
       get().toast("Ingen forbindelse til serveren endnu — prøv igen.", "error");

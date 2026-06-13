@@ -249,18 +249,36 @@ export class StatsStore {
     };
   }
 
-  /** Record a finished game. Deferred until the initial load completes. */
-  record(state: GameState): void {
-    void this.ready.then(() => this.apply(state));
+  /**
+   * Record a finished game. Deferred until the initial load completes.
+   * `clientIds` maps playerId -> stable per-device id, so a player's stats
+   * follow them across name changes instead of splitting into a new row.
+   */
+  record(state: GameState, clientIds?: Map<string, string | null>): void {
+    void this.ready.then(() => this.apply(state, clientIds));
   }
 
-  private apply(state: GameState): void {
+  private apply(state: GameState, clientIds?: Map<string, string | null>): void {
     const over = state.gameOver;
     if (!over) return;
     for (const p of state.players) {
       if (p.isBot) continue;
-      const key = p.name.trim().toLowerCase();
-      if (!key || isHiddenName(key)) continue;
+      const nameKey = p.name.trim().toLowerCase();
+      if (!nameKey || isHiddenName(nameKey)) continue;
+
+      // Identity: prefer the stable per-device clientId so stats survive a
+      // rename; fall back to the name for legacy clients that don't send one.
+      const clientId = clientIds?.get(p.id) ?? null;
+      const key = clientId ?? nameKey;
+
+      // One-time migration: the first time a player appears WITH a clientId,
+      // adopt any existing legacy name-keyed row so their history carries over
+      // (instead of starting a fresh, split entry).
+      if (clientId && !this.entries[clientId] && this.entries[nameKey] && nameKey !== clientId) {
+        this.entries[clientId] = this.entries[nameKey]!;
+        delete this.entries[nameKey];
+      }
+
       const e = (this.entries[key] ??= {
         name: p.name.trim(),
         avatar: p.avatar,

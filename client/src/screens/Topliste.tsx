@@ -11,7 +11,7 @@ export function Topliste() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    fetch("/api/topliste")
+    fetch("/api/topliste", { cache: "no-store" })
       .then((r) => r.json())
       .then(setEntries)
       .catch(() => setError(true));

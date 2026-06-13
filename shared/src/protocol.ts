@@ -64,6 +64,9 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("createRoom"),
     name: PlayerNameSchema,
     avatar: AvatarSchema,
+    // Stable, anonymous per-device id so leaderboard stats follow a player
+    // across name changes. Never shown to other players.
+    clientId: z.string().max(64).optional(),
   }),
   z.object({
     type: z.literal("joinRoom"),
@@ -71,6 +74,7 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
     name: PlayerNameSchema,
     avatar: AvatarSchema,
     token: z.string().optional(),
+    clientId: z.string().max(64).optional(),
   }),
   z.object({ type: z.literal("leaveRoom") }),
   z.object({ type: z.literal("addBot"), difficulty: BotDifficultySchema }),
