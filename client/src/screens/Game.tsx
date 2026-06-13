@@ -277,8 +277,8 @@ export function Game() {
 
       {/* Piles — real 3D table when enabled, otherwise the CSS-3D version */}
       {threeD ? (
-        <div className="relative z-10 flex w-full flex-1 flex-col justify-center" style={{ minHeight: 300 }}>
-          <Suspense fallback={<div className="h-full min-h-[300px] w-full animate-pulse" />}>
+        <div className="relative z-10 w-full flex-1" style={{ minHeight: "55vh" }}>
+          <Suspense fallback={<div className="absolute inset-0 animate-pulse" />}>
             <Table3D
               drawCount={game.drawCount}
               discardTop={game.discardPile.at(-1) ?? null}

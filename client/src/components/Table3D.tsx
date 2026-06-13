@@ -1248,8 +1248,8 @@ export function Table3D(props: Table3DProps) {
   const camY = seatCount >= 4 ? 3.35 : 3.15;
 
   return (
-    // Fills its container; the container is made full-width in 3D mode.
-    <div className="table3d-host relative h-full min-h-[60vh] w-full">
+    // Absolutely fills its (relative, flex-1) container — full available height.
+    <div className="table3d-host absolute inset-0">
       <Canvas
         shadows
         frameloop="demand"
