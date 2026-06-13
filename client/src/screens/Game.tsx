@@ -97,6 +97,13 @@ export function Game() {
 
   const abilityTargeting = myTurn && game.turnStage === "ability" && game.pendingAbility !== null;
 
+  // Opponent cards share the top row — bigger when fewer opponents, so they
+  // stay easy to see and tap (the tiny w-6 grid was hard to hit). Always fits
+  // the row, even with 5 opponents at the table.
+  const oppCount = opponents.length;
+  const oppCardClass =
+    oppCount <= 2 ? "w-14" : oppCount === 3 ? "w-11" : oppCount === 4 ? "w-9" : "w-7";
+
   const onCardTap = (ref: GridRef) => {
     const mine = ref.playerId === playerId;
 
@@ -268,6 +275,7 @@ export function Game() {
               onCardTap={abilityTargeting ? onCardTap : undefined}
               targetable={abilityTargeting}
               selectedRef={abilityFirstPick}
+              cardClass={oppCardClass}
             />
           ))}
         </div>

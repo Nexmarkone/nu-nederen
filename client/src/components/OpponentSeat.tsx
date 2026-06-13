@@ -14,6 +14,7 @@ export function OpponentSeat({
   targetable,
   selectedRef,
   hideCards,
+  cardClass = "w-6",
 }: {
   player: RedactedPlayer;
   isCurrent: boolean;
@@ -24,6 +25,8 @@ export function OpponentSeat({
   selectedRef?: GridRef | null;
   /** When the 3D table renders the cards, omit the HTML mini-grid here. */
   hideCards?: boolean;
+  /** Card width — adapts to how many opponents share the top row. */
+  cardClass?: string;
 }) {
   return (
     <div
@@ -78,7 +81,7 @@ export function OpponentSeat({
       {!hideCards && (
         <CardGrid
           player={player}
-          cardClass="w-6"
+          cardClass={cardClass}
           onCardTap={onCardTap}
           targetable={targetable}
           selectedRef={selectedRef}
