@@ -12,12 +12,12 @@
   "mark": {
     "name": "Mark",
     "avatar": "🦁",
-    "games": 3,
-    "wins": 0,
+    "games": 4,
+    "wins": 1,
     "nederen": 1,
-    "jumpIns": 27,
-    "baguetteHits": 1,
-    "lastPlayed": 1781364180514
+    "jumpIns": 33,
+    "baguetteHits": 2,
+    "lastPlayed": 1781374303039
   },
   "jennifer pokorni": {
     "name": "Jennifer Pokorni",
@@ -32,21 +32,21 @@
   "t.b": {
     "name": "T.B",
     "avatar": "🐻",
-    "games": 2,
+    "games": 3,
     "wins": 1,
     "nederen": 0,
-    "jumpIns": 28,
+    "jumpIns": 31,
     "baguetteHits": 1,
-    "lastPlayed": 1781364180514
+    "lastPlayed": 1781374303039
   },
   "fer": {
     "name": "Fer",
     "avatar": "🐷",
-    "games": 1,
+    "games": 2,
     "wins": 0,
-    "nederen": 0,
+    "nederen": 1,
     "jumpIns": 10,
     "baguetteHits": 0,
-    "lastPlayed": 1781338700720
+    "lastPlayed": 1781374303039
   }
 }
