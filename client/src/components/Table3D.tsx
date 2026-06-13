@@ -163,7 +163,7 @@ function feltTexture(): THREE.CanvasTexture {
 
 const EDGE_COLOR = new THREE.Color("#EFE7CF");
 
-function cardMaterials(topTexture: THREE.Texture): THREE.Material[] {
+function cardMaterials(topTexture: THREE.Texture, emissive?: string): THREE.Material[] {
   const edge = new THREE.MeshStandardMaterial({ color: EDGE_COLOR, roughness: 0.5, metalness: 0.05 });
   // Physical material with clearcoat = a laminated, glossy playing-card sheen.
   const top = new THREE.MeshPhysicalMaterial({
@@ -172,6 +172,8 @@ function cardMaterials(topTexture: THREE.Texture): THREE.Material[] {
     metalness: 0.0,
     clearcoat: 0.9,
     clearcoatRoughness: 0.26,
+    emissive: emissive ? new THREE.Color(emissive) : new THREE.Color(0x000000),
+    emissiveIntensity: emissive ? 0.25 : 0,
   });
   const bottom = new THREE.MeshStandardMaterial({ color: EDGE_COLOR, roughness: 0.6 });
   // Box faces: [+X,-X,+Y,-Y,+Z,-Z]; flat card -> +Z(index4) faces up.
@@ -183,13 +185,15 @@ function CardMesh({
   rotation,
   topTexture,
   onClick,
+  emissive,
 }: {
   position: [number, number, number];
   rotation?: [number, number, number];
   topTexture: THREE.Texture;
   onClick?: (e: ThreeEvent<MouseEvent>) => void;
+  emissive?: string;
 }) {
-  const materials = useMemo(() => cardMaterials(topTexture), [topTexture]);
+  const materials = useMemo(() => cardMaterials(topTexture, emissive), [topTexture, emissive]);
   return (
     <mesh
       position={position}
@@ -243,6 +247,60 @@ function easeOut(t: number): number {
   return 1 - Math.pow(1 - t, 3);
 }
 
+export interface Slot3D {
+  id: string;
+  /** Face data if it should be shown (peek/reveal); null = render the back. */
+  face: { rank: Card["rank"]; suit: Card["suit"] } | null;
+}
+
+/** The viewer's own cards, laid out 2-per-row on the felt in front of them. */
+function OwnHand3D({
+  slots,
+  onTap,
+  tappable,
+  highlight,
+}: {
+  slots: (Slot3D | null)[];
+  onTap: (gridIndex: number) => void;
+  tappable: boolean;
+  highlight: boolean;
+}) {
+  const back = backTexture();
+  const ref = useRef<THREE.Group>(null);
+  const invalidate = useThree((s) => s.invalidate);
+  // a soft glow pulse when these cards are tap targets
+  useFrame((state) => {
+    if (!ref.current || !highlight) return;
+    const e = 0.5 + Math.sin(state.clock.elapsedTime * 4) * 0.5;
+    ref.current.children.forEach((ch) => {
+      const m = (ch as THREE.Mesh).material as THREE.MeshStandardMaterial[] | undefined;
+      if (Array.isArray(m) && m[4]) (m[4] as THREE.MeshStandardMaterial).emissiveIntensity = e * 0.5;
+    });
+    invalidate();
+  });
+  return (
+    <group ref={ref}>
+      {slots.map((s, i) => {
+        if (!s) return null;
+        const col = i % 2;
+        const row = Math.floor(i / 2);
+        const x = col === 0 ? -0.66 : 0.66;
+        const z = 1.62 + row * 1.34;
+        const tex = s.face ? faceTexture(s.face) : back;
+        return (
+          <CardMesh
+            key={s.id}
+            position={[x, 0.04, z]}
+            topTexture={tex}
+            emissive={highlight ? "#E8C57A" : undefined}
+            onClick={tappable ? () => onTap(i) : undefined}
+          />
+        );
+      })}
+    </group>
+  );
+}
+
 function DiscardCard({ card, onTake }: { card: Card | null; onTake?: () => void }) {
   const ref = useRef<THREE.Group>(null);
   const prevId = useRef<string | null>(null);
@@ -290,19 +348,19 @@ function Felt() {
   const tex = feltTexture();
   return (
     <group>
-      {/* table top */}
-      <mesh position={[0, -0.03, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <circleGeometry args={[3.7, 72]} />
+      {/* table top — large enough to fill the screen edge to edge */}
+      <mesh position={[0, -0.03, 0.6]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <circleGeometry args={[5.2, 80]} />
         <meshStandardMaterial map={tex} roughness={0.95} metalness={0} />
       </mesh>
-      {/* gold inlay ring */}
-      <mesh position={[0, -0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[3.5, 3.66, 72]} />
+      {/* gold inlay ring around the play area */}
+      <mesh position={[0, -0.025, 0.6]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[4.0, 4.16, 80]} />
         <meshStandardMaterial color={GOLD} roughness={0.4} metalness={0.55} />
       </mesh>
       {/* padded leather/brass rail around the table */}
-      <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow>
-        <torusGeometry args={[3.78, 0.2, 18, 80]} />
+      <mesh position={[0, 0.02, 0.6]} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow>
+        <torusGeometry args={[4.3, 0.24, 18, 90]} />
         <meshStandardMaterial color="#4a3320" roughness={0.45} metalness={0.35} />
       </mesh>
     </group>
@@ -360,19 +418,35 @@ export interface Table3DProps {
   canTake: boolean;
   onDraw: () => void;
   onTake: () => void;
+  ownSlots: (Slot3D | null)[];
+  onOwnTap: (gridIndex: number) => void;
+  ownTappable: boolean;
+  ownHighlight: boolean;
 }
 
-export function Table3D({ drawCount, discardTop, canDraw, canTake, onDraw, onTake }: Table3DProps) {
+export function Table3D({
+  drawCount,
+  discardTop,
+  canDraw,
+  canTake,
+  onDraw,
+  onTake,
+  ownSlots,
+  onOwnTap,
+  ownTappable,
+  ownHighlight,
+}: Table3DProps) {
+  const ownKey = ownSlots.map((s) => (s ? `${s.id}:${s.face ? s.face.rank : "x"}` : "_")).join(",");
   return (
-    <div className="table3d-host relative h-full min-h-[300px] w-full">
+    <div className="table3d-host relative h-full min-h-[320px] w-full">
       <Canvas
         shadows
         frameloop="demand"
         dpr={[1, 2]}
-        camera={{ position: [0, 2.55, 4.35], fov: 42 }}
+        camera={{ position: [0, 3.5, 5.3], fov: 44 }}
         gl={{ antialias: true, alpha: true }}
         style={{ background: "transparent" }}
-        onCreated={({ camera }) => camera.lookAt(0, -0.25, 0)}
+        onCreated={({ camera }) => camera.lookAt(0, -0.15, 1.1)}
       >
         <hemisphereLight args={["#cfe3d6", "#0a1c13", 0.7]} />
         <directionalLight
@@ -395,7 +469,13 @@ export function Table3D({ drawCount, discardTop, canDraw, canTake, onDraw, onTak
         <Felt />
         <DrawStack count={drawCount} onDraw={canDraw ? onDraw : undefined} />
         <DiscardCard card={discardTop} onTake={canTake ? onTake : undefined} />
-        <Invalidate deps={[drawCount, discardTop?.id ?? "none", canDraw, canTake]} />
+        <OwnHand3D
+          slots={ownSlots}
+          onTap={onOwnTap}
+          tappable={ownTappable}
+          highlight={ownHighlight}
+        />
+        <Invalidate deps={[drawCount, discardTop?.id ?? "none", canDraw, canTake, ownKey, ownTappable, ownHighlight]} />
       </Canvas>
       <div className="pointer-events-none absolute inset-x-0 bottom-1 flex justify-between px-8 text-[11px] font-semibold text-cream/60">
         <span>{drawCount} kort</span>

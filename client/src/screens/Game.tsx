@@ -52,6 +52,7 @@ export function Game() {
   const toggleMusic = useStore((s) => s.toggleMusic);
   const threeD = useStore((s) => s.threeD);
   const toggleThreeD = useStore((s) => s.toggleThreeD);
+  const peeks = useStore((s) => s.peeks);
   const leaveRoom = useStore((s) => s.leaveRoom);
   const act = useStore((s) => s.act);
   const toast = useStore((s) => s.toast);
@@ -155,6 +156,26 @@ export function Game() {
     return `${current.avatar} ${current.name} ${game.turnStage === "window" ? "— jump-vindue!" : "tænker…"}`;
   })();
 
+  // Own cards for the 3D table: face shown only when revealed or privately peeked.
+  const ownPeekFace = (i: number) => {
+    for (const p of peeks) {
+      for (const c of p.cards) {
+        if (c.gridRef && c.gridRef.playerId === playerId && c.gridRef.gridIndex === i) {
+          return { rank: c.card.rank, suit: c.card.suit };
+        }
+      }
+    }
+    return null;
+  };
+  const ownSlots = me
+    ? me.grid.map((c, i) => {
+        if (!c) return null;
+        const face = c.faceUp && c.rank ? { rank: c.rank, suit: c.suit ?? null } : ownPeekFace(i);
+        return { id: c.id, face };
+      })
+    : [];
+  const ownTappable = !!(abilityTargeting || (swapSelecting && myTurn) || windowOpen);
+
   return (
     <motion.div
       animate={shakeControls}
@@ -248,6 +269,10 @@ export function Game() {
               }
               onDraw={() => act({ type: "draw" })}
               onTake={() => act({ type: "draw", from: "discard" })}
+              ownSlots={ownSlots}
+              ownTappable={ownTappable}
+              ownHighlight={ownTappable}
+              onOwnTap={(i) => onCardTap({ playerId: playerId, gridIndex: i })}
             />
           </Suspense>
           {windowOpen && (
@@ -305,15 +330,17 @@ export function Game() {
       {/* Own area */}
       {me && (
         <div className="z-10 flex flex-col items-center gap-2 pb-[env(safe-area-inset-bottom)]">
-          <CardGrid
-            player={me}
-            cardClass="w-[74px]"
-            onCardTap={onCardTap}
-            targetable={abilityTargeting || (swapSelecting && myTurn)}
-            jumpable={!!windowOpen}
-            selectedRef={abilityFirstPick}
-            shadow
-          />
+          {!threeD && (
+            <CardGrid
+              player={me}
+              cardClass="w-[74px]"
+              onCardTap={onCardTap}
+              targetable={abilityTargeting || (swapSelecting && myTurn)}
+              jumpable={!!windowOpen}
+              selectedRef={abilityFirstPick}
+              shadow
+            />
+          )}
           <div className="flex items-center gap-2.5">
             <div className="relative">
               {game.phase === "playing" && current.id === playerId && (
