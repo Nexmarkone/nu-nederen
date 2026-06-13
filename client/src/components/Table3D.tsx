@@ -451,16 +451,16 @@ function Card3D({
       dirty = true;
     }
 
-    // glow pulse on the private material
+    // Tasteful, restrained tap highlight: a gentle, slow gold sheen — never a
+    // garish flashing glow.
     if (glow) {
       const base = glow === "gold" ? GLOW_GOLD : GLOW_TAP;
       if (topMat.emissive.getHex() !== base.getHex()) topMat.emissive.copy(base);
       if (glowPulse && !reduced) {
-        const p = 0.55 + Math.sin(state.clock.elapsedTime * 5) * 0.45;
-        topMat.emissiveIntensity = p * 0.95;
+        topMat.emissiveIntensity = 0.24 + (Math.sin(state.clock.elapsedTime * 1.8) * 0.5 + 0.5) * 0.12;
         dirty = true;
       } else {
-        topMat.emissiveIntensity = 0.55;
+        topMat.emissiveIntensity = 0.28;
       }
     } else if (topMat.emissiveIntensity !== 0) {
       topMat.emissiveIntensity = 0;
@@ -1195,18 +1195,17 @@ export function Table3D(props: Table3DProps) {
 
   // Close, immersive framing so the cards are BIG and fill the screen.
   const seatCount = props.opponents.length;
-  const camZ = seatCount >= 4 ? 4.5 : 4.1;
-  const camY = seatCount >= 4 ? 3.0 : 2.8;
+  const camZ = seatCount >= 4 ? 4.2 : 3.8;
+  const camY = seatCount >= 4 ? 2.7 : 2.5;
 
   return (
-    // Full-screen background: the table fills the whole viewport (UNO-style),
-    // with the HTML UI floating on top.
-    <div className="table3d-host fixed inset-0 z-[1]">
+    // Fills its container; the container is made full-width in 3D mode.
+    <div className="table3d-host relative h-full min-h-[60vh] w-full">
       <Canvas
         shadows
         frameloop="demand"
         dpr={[1, 2]}
-        camera={{ position: [0, camY, camZ], fov: 52 }}
+        camera={{ position: [0, camY, camZ], fov: 54 }}
         gl={{
           antialias: true,
           alpha: true,
