@@ -1,14 +1,4 @@
 {
-  "mark": {
-    "name": "Mark",
-    "avatar": "🦁",
-    "games": 7,
-    "wins": 1,
-    "nederen": 2,
-    "jumpIns": 52,
-    "baguetteHits": 2,
-    "lastPlayed": 1781376337894
-  },
   "t.b": {
     "name": "T.B",
     "avatar": "🐻",
@@ -19,14 +9,24 @@
     "baguetteHits": 4,
     "lastPlayed": 1781376337894
   },
-  "fer": {
+  "b117b811-3e85-464c-b340-9fbf0e1300d0": {
+    "name": "Mark",
+    "avatar": "🦁",
+    "games": 8,
+    "wins": 2,
+    "nederen": 2,
+    "jumpIns": 58,
+    "baguetteHits": 3,
+    "lastPlayed": 1781541904180
+  },
+  "03d84d6a-bdfb-40ce-bccc-e75ff2a2f18b": {
     "name": "Fer",
     "avatar": "🐷",
-    "games": 6,
+    "games": 7,
     "wins": 0,
-    "nederen": 3,
-    "jumpIns": 26,
+    "nederen": 4,
+    "jumpIns": 32,
     "baguetteHits": 1,
-    "lastPlayed": 1781376337894
+    "lastPlayed": 1781541904180
   }
 }
