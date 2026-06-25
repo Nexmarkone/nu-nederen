@@ -260,38 +260,42 @@ describe("jump-in", () => {
     expect(res.state.jumpWindow.id).toBe(newWindowId + 1);
   });
 
-  it("a wrong-rank jump returns the card and draws a hidden penalty card", () => {
+  it("a wrong-rank jump appends a hidden penalty card WITHOUT scrambling the grid", () => {
     const { state, rng, windowId } = windowOpenGame();
     const p2 = state.players[1]!;
     const before = state.drawPile.length;
+    const baseIdsBefore = p2.grid.slice(0, 4).map((c) => c?.id ?? null); // snapshot the base 2x2
     const res = ok(state, { type: "jumpIn", playerId: p2.id, gridIndex: 1, windowId }, rng); // a 9, top is 7
     const after = res.state.players[1]!;
-    expect(after.grid).toHaveLength(5); // penalty card added on top
-    expect(after.grid[2]!.rank).toBe("9"); // the returned 9 shifted down by one
+    expect(after.grid).toHaveLength(5); // penalty appended as an extra
     expect(after.stats.failedJumpIns).toBe(1);
     expect(res.state.drawPile).toHaveLength(before - 1);
+    // Base 2x2 is UNCHANGED — no re-index, no scramble of what you memorised.
+    expect(after.grid.slice(0, 4).map((c) => c?.id ?? null)).toEqual(baseIdsBefore);
+    expect(after.grid[1]!.rank).toBe("9"); // the returned 9 stays exactly where it was
     const ev = res.events.find((e) => e.type === "jumpInFailed")!;
-    expect("penaltyGridIndex" in ev && ev.penaltyGridIndex).toBe(0); // lands on top
+    expect("penaltyGridIndex" in ev && ev.penaltyGridIndex).toBe(4); // appended at the end
     if (ev.type === "jumpInFailed") {
-      expect(after.grid[0]!.id).toBe(ev.penaltyCardId); // top slot is the penalty
+      expect(after.grid[4]!.id).toBe(ev.penaltyCardId); // last slot is the penalty
     }
     // Window unaffected by a failed jump.
     expect(res.state.jumpWindow.id).toBe(windowId);
     expect(res.state.jumpWindow.open).toBe(true);
   });
 
-  it("a penalty lands on TOP even when a lower slot is empty (never fills the bottom gap)", () => {
+  it("a penalty is appended at the end and never fills an existing empty slot", () => {
     const { state, rng, windowId } = windowOpenGame();
     const p2 = state.players[1]!;
-    p2.grid[3] = null; // p2 had jumped a bottom card away earlier — empty bottom slot
+    p2.grid[3] = null; // p2 had jumped a bottom card away earlier — empty base slot
     const res = ok(state, { type: "jumpIn", playerId: p2.id, gridIndex: 1, windowId }, rng); // a 9, top is 7 -> wrong
     const after = res.state.players[1]!;
     const ev = res.events.find((e) => e.type === "jumpInFailed")!;
-    expect("penaltyGridIndex" in ev && ev.penaltyGridIndex).toBe(0); // TOP, not the empty bottom slot
+    expect(after.grid).toHaveLength(5);
+    expect("penaltyGridIndex" in ev && ev.penaltyGridIndex).toBe(4); // appended, not slotted into [3]
     if (ev.type === "jumpInFailed") {
-      expect(after.grid[0]!.id).toBe(ev.penaltyCardId);
+      expect(after.grid[4]!.id).toBe(ev.penaltyCardId);
     }
-    expect(after.grid.at(-1)).toBeNull(); // the empty bottom slot is left untouched
+    expect(after.grid[3]).toBeNull(); // the empty base slot is left untouched
   });
 
   it("supports the points5 penalty house rule", () => {

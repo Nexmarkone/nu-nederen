@@ -517,11 +517,13 @@ export function applyAction(prev: GameState, action: EngineAction, rng: Rng): En
       if (ensureDrawPile(state, rng, events)) {
         const penaltyCard = state.drawPile.pop()!;
         penaltyCardId = penaltyCard.id;
-        // House rule: a penalty card ALWAYS lands on TOP of the grid (index 0),
-        // never at the bottom — even when an empty slot exists lower down. It is
-        // a punishment, and it shifts what you had memorised.
-        p.grid.unshift(penaltyCard);
-        penaltyGridIndex = 0;
+        // House rule: a penalty card is an EXTRA appended at the end of the grid
+        // (index >= GRID_SIZE). It never displaces the base 2x2 — indices 0..3
+        // keep their positions, so the player's memory, the bots' belief maps
+        // (keyed by gridIndex) and empty slots all stay intact. The client
+        // renders these extras stacked ABOVE the base grid as a visible penalty.
+        p.grid.push(penaltyCard);
+        penaltyGridIndex = p.grid.length - 1;
       }
       events.push({
         type: "jumpInFailed",
